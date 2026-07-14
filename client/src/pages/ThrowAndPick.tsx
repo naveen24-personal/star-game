@@ -2,6 +2,7 @@ import type { PublicRoom } from "@chit/shared";
 import { CHITS_PER_PLAYER } from "@chit/shared";
 import { api } from "../socket";
 import { ChitCard } from "../components/ChitCard";
+import { TableWorkspace } from "../components/TableWorkspace";
 
 type Props = { room: PublicRoom };
 
@@ -14,78 +15,93 @@ export function ThrowAndPick({ room }: Props) {
 
   if (room.phase === "throwing") {
     return (
-      <section className="panel">
-        <p className="eyebrow">Throw</p>
-        <h2 className="title">All chits are clubbed</h2>
-        <p className="lede">
-          {isThrower
-            ? "You are the thrower — toss the pile so everyone can pick."
-            : "Waiting for the thrower to throw the chits…"}
-        </p>
-        {isThrower && (
-          <button type="button" className="btn btn--primary btn--throw" onClick={() => api.throwChits()}>
-            Throw chits
-          </button>
-        )}
-      </section>
+      <TableWorkspace
+        room={room}
+        seatNote={(p) => (p.id === room.throwerId ? "thrower" : "ready")}
+        center={
+          <div className="table-action">
+            <p className="eyebrow">Clubbed pile</p>
+            <h2 className="table-action__title">Chits on the table</h2>
+            <div className="pile-stack" aria-hidden>
+              <span /><span /><span />
+            </div>
+            <p className="lede table-action__lede">
+              {isThrower
+                ? "Throw so everyone around the table can pick."
+                : "Waiting for the thrower…"}
+            </p>
+            {isThrower && (
+              <button
+                type="button"
+                className="btn btn--primary btn--throw"
+                onClick={() => api.throwChits()}
+              >
+                Throw chits
+              </button>
+            )}
+          </div>
+        }
+      />
     );
   }
 
   return (
-    <section className="panel">
-      <p className="eyebrow">Pick</p>
-      <h2 className="title">
-        Pick {CHITS_PER_PLAYER} chits ({claimed}/{CHITS_PER_PLAYER})
-      </h2>
-      <p className="lede">
-        Tap a folded chit to claim it instantly. Taken chits disappear for everyone else. Tap one of
-        yours to release it before you lock {CHITS_PER_PLAYER}.
-      </p>
-
-      {locked ? (
-        <p className="status">You locked in {CHITS_PER_PLAYER}. Waiting for others…</p>
-      ) : (
-        <>
-          <h3 className="subtitle">Pool ({room.pool.length} left)</h3>
-          <div className="chit-grid">
-            {room.pool.map((chit) => (
+    <TableWorkspace
+      room={room}
+      seatNote={(p) =>
+        p.hasPicked ? "locked 4" : `${p.handCount}/${CHITS_PER_PLAYER}`
+      }
+      center={
+        <div className="table-action">
+          <p className="eyebrow">Pick</p>
+          <h2 className="table-action__title">
+            {claimed}/{CHITS_PER_PLAYER} claimed
+          </h2>
+          {locked ? (
+            <p className="status">Locked in. Waiting for the table…</p>
+          ) : (
+            <>
+              <p className="lede table-action__lede">
+                Tap a folded chit to claim it. Taken ones leave the pile.
+              </p>
+              <div className="chit-grid chit-grid--compact">
+                {room.pool.map((chit) => (
+                  <ChitCard
+                    key={chit.id}
+                    chit={chit}
+                    faceDown
+                    disabled={claimed >= CHITS_PER_PLAYER}
+                    onClick={() => api.claim(chit.id)}
+                  />
+                ))}
+              </div>
+              {room.pool.length === 0 && (
+                <p className="muted">No folded chits left.</p>
+              )}
+            </>
+          )}
+        </div>
+      }
+      footer={
+        <div className="table-footer">
+          <h3 className="subtitle">Your claims</h3>
+          <div className="chit-grid chit-grid--compact">
+            {hand.map((chit) => (
               <ChitCard
                 key={chit.id}
                 chit={chit}
                 faceDown
-                disabled={claimed >= CHITS_PER_PLAYER}
-                onClick={() => api.claim(chit.id)}
+                selected
+                disabled={locked}
+                onClick={locked ? undefined : () => api.release(chit.id)}
               />
             ))}
+            {hand.length === 0 && (
+              <p className="muted">None yet — claim from the center pile.</p>
+            )}
           </div>
-          {room.pool.length === 0 && (
-            <p className="muted">No folded chits left in the pool.</p>
-          )}
-        </>
-      )}
-
-      <h3 className="subtitle">Your claims</h3>
-      <div className="chit-grid">
-        {hand.map((chit) => (
-          <ChitCard
-            key={chit.id}
-            chit={chit}
-            faceDown
-            selected
-            disabled={locked}
-            onClick={locked ? undefined : () => api.release(chit.id)}
-          />
-        ))}
-        {hand.length === 0 && <p className="muted">None yet — claim from the pool.</p>}
-      </div>
-
-      <ul className="player-list compact">
-        {room.players.map((p) => (
-          <li key={p.id}>
-            {p.nickname}: {p.hasPicked ? "locked 4" : `${p.handCount}/4 claiming…`}
-          </li>
-        ))}
-      </ul>
-    </section>
+        </div>
+      }
+    />
   );
 }

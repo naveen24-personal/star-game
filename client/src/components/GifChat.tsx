@@ -1,15 +1,14 @@
 import { useMemo, useState } from "react";
-import type { ChatMessage } from "@chit/shared";
-import { TOLLYWOOD_GIFS, getGifById } from "@chit/shared";
+import { TOLLYWOOD_GIFS } from "@chit/shared";
 import { api } from "../socket";
 
 type Props = {
-  messages: ChatMessage[];
   open: boolean;
   onToggle: () => void;
 };
 
-export function GifChat({ messages, open, onToggle }: Props) {
+/** Picker only — reactions pop on the main screen, not stored in a feed. */
+export function GifChat({ open, onToggle }: Props) {
   const [filter, setFilter] = useState("");
   const gifs = useMemo(() => {
     const q = filter.trim().toLowerCase();
@@ -20,26 +19,17 @@ export function GifChat({ messages, open, onToggle }: Props) {
   return (
     <aside className={`gifchat ${open ? "gifchat--open" : ""}`}>
       <button type="button" className="gifchat__toggle" onClick={onToggle}>
-        {open ? "Hide reactions" : "Tollywood GIFs"}
+        {open ? "Close reactions" : "Tollywood GIFs"}
       </button>
       {open && (
         <div className="gifchat__panel">
-          <div className="gifchat__feed">
-            {messages.length === 0 && <p className="muted">Send a Tollywood reaction…</p>}
-            {messages.map((m) => {
-              const gif = getGifById(m.gifId);
-              return (
-                <div key={m.id} className="gifchat__msg">
-                  <span className="gifchat__who">{m.nickname}</span>
-                  {gif ? (
-                    <img src={gif.gifUrl} alt={gif.label} loading="lazy" />
-                  ) : (
-                    <span>{m.gifId}</span>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+          <p className="gifchat__hint">
+            Telugu reactions from{" "}
+            <a href="https://tenor.com/search/telugu-gifs" target="_blank" rel="noreferrer">
+              Tenor
+            </a>{" "}
+            — tap to pop on the table.
+          </p>
           <input
             className="gifchat__search"
             placeholder="Search reactions"
@@ -53,7 +43,10 @@ export function GifChat({ messages, open, onToggle }: Props) {
                 type="button"
                 className="gifchat__pick"
                 title={g.label}
-                onClick={() => api.sendGif(g.id)}
+                onClick={() => {
+                  api.sendGif(g.id);
+                  onToggle();
+                }}
               >
                 <img src={g.gifUrl} alt={g.label} loading="lazy" />
                 <span>{g.label}</span>
