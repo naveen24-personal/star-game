@@ -3,6 +3,7 @@ import cors from "cors";
 import path from "path";
 import http from "http";
 import { Server } from "socket.io";
+import { GIF_CATEGORIES } from "@chit/shared";
 import {
   createRoom,
   disconnectSocket,
@@ -19,6 +20,7 @@ import {
   toPublicRoom,
 } from "./roomManager";
 import type { InternalRoom } from "./gameLogic";
+import { resolveCategoryQuery, searchTenorGifs } from "./tenor";
 
 const PORT = Number(process.env.PORT) || 3001;
 const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN || "http://localhost:5173";
@@ -27,6 +29,25 @@ const isProd = process.env.NODE_ENV === "production";
 const app = express();
 app.use(cors({ origin: isProd ? true : CLIENT_ORIGIN }));
 app.get("/health", (_req, res) => res.json({ ok: true }));
+
+app.get("/api/gifs/categories", (_req, res) => {
+  res.json({ categories: GIF_CATEGORIES });
+});
+
+app.get("/api/gifs/search", async (req, res) => {
+  try {
+    const category = typeof req.query.category === "string" ? req.query.category : "";
+    const qRaw = typeof req.query.q === "string" ? req.query.q.trim() : "";
+    const pos = typeof req.query.pos === "string" ? req.query.pos : undefined;
+    const categoryQuery = resolveCategoryQuery(category);
+    const q = qRaw || categoryQuery || "telugu memes";
+    const result = await searchTenorGifs({ q, pos, limit: 30 });
+    res.json(result);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "GIF search failed";
+    res.status(502).json({ items: [], next: null, error: message });
+  }
+});
 
 if (isProd) {
   const clientDist = path.join(__dirname, "../../client/dist");
@@ -144,14 +165,17 @@ io.on("connection", (socket) => {
     emitRoom(result.room);
   });
 
-  socket.on("chat:gif", (payload: { gifId?: string }) => {
-    const result = doChatGif(socket.id, payload?.gifId ?? "");
-    if (!result.ok) {
-      emitError(socket.id, result.message);
-      return;
+  socket.on(
+    "chat:gif",
+    (payload: { gifId?: string; gifUrl?: string; label?: string }) => {
+      const result = doChatGif(socket.id, payload ?? {});
+      if (!result.ok) {
+        emitError(socket.id, result.message);
+        return;
+      }
+      io.to(result.room.code).emit("chat:message", result.message);
     }
-    io.to(result.room.code).emit("chat:message", result.message);
-  });
+  );
 
   socket.on("disconnect", () => {
     const room = disconnectSocket(socket.id);

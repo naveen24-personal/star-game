@@ -58,6 +58,7 @@ function makeRoom(): InternalRoom {
     currentTurnPlayerId: null,
     winnerId: null,
     winnerChits: null,
+    lastPass: null,
   };
 }
 

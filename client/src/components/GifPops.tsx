@@ -14,7 +14,7 @@ export function GifPops({ pops, positions }: Props) {
   return (
     <div className="gif-pops" aria-live="polite">
       {pops.map((p) => {
-        const gif = getGifById(p.gifId);
+        const url = p.gifUrl || getGifById(p.gifId)?.gifUrl;
         const pos = positions?.[p.playerId] ?? { left: 50, top: 40 };
         return (
           <div
@@ -23,8 +23,8 @@ export function GifPops({ pops, positions }: Props) {
             style={{ left: `${pos.left}%`, top: `${pos.top}%` }}
           >
             <span className="gif-pop__who">{p.nickname}</span>
-            {gif ? (
-              <img src={gif.gifUrl} alt={gif.label} />
+            {url ? (
+              <img src={url} alt={p.label || "GIF"} />
             ) : (
               <span className="gif-pop__fallback">{p.gifId}</span>
             )}

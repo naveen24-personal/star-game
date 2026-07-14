@@ -30,6 +30,7 @@ export interface InternalRoom {
   currentTurnPlayerId: string | null;
   winnerId: string | null;
   winnerChits: Chit[] | null;
+  lastPass: { fromPlayerId: string; toPlayerId: string; chitId: string } | null;
 }
 
 export function createRoomCode(): string {
@@ -77,6 +78,7 @@ export function startWriting(room: InternalRoom): void {
   room.currentTurnPlayerId = null;
   room.winnerId = null;
   room.winnerChits = null;
+  room.lastPass = null;
   for (const p of room.players) {
     p.submittedTexts = null;
     p.hand = [];
@@ -259,6 +261,11 @@ export function passChit(
   chit.ownerId = neighbor.id;
   neighbor.hand.push(chit);
 
+  room.lastPass = {
+    fromPlayerId: playerId,
+    toPlayerId: neighbor.id,
+    chitId: chit.id,
+  };
   room.currentTurnPlayerId = neighbor.id;
 
   const win = checkWinner(room);
@@ -289,6 +296,7 @@ export function resetToLobby(room: InternalRoom): void {
   room.currentTurnPlayerId = null;
   room.winnerId = null;
   room.winnerChits = null;
+  room.lastPass = null;
   for (const p of room.players) {
     p.submittedTexts = null;
     p.hand = [];

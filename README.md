@@ -38,7 +38,8 @@ Then open `http://localhost:3001`.
 3. **Build command:** `npm install --include=dev && npm run build`
 4. **Start command:** `npm start`
 5. Env: `NODE_ENV=production` (runtime only; `--include=dev` is required so Vite/TypeScript install during build)
-6. Open the Render URL and play with friends.
+6. Optional: set `TENOR_API_KEY` on Render for higher Tenor rate limits (otherwise the public demo key is used)
+7. Open the Render URL and play with friends.
 
 ## Smoke test
 

@@ -5,7 +5,8 @@ import {
   MIN_PLAYERS,
   PublicPlayer,
   PublicRoom,
-  TOLLYWOOD_GIF_IDS,
+  getGifById,
+  isAllowedGifUrl,
   normalizeNickname,
   nicknamesEqual,
 } from "@chit/shared";
@@ -72,6 +73,7 @@ export function createRoom(
     currentTurnPlayerId: null,
     winnerId: null,
     winnerChits: null,
+    lastPass: null,
   };
   rooms.set(code, room);
   socketToRoom.set(socketId, { roomCode: code, playerId });
@@ -191,13 +193,25 @@ export function doPlayAgain(socketId: string) {
 
 export function doChatGif(
   socketId: string,
-  gifId: string
+  payload: { gifId?: string; gifUrl?: string; label?: string }
 ): { ok: true; room: InternalRoom; message: ChatMessage } | { ok: false; message: string } {
   const ctx = requirePlayer(socketId);
   if (!ctx.ok) return ctx;
-  if (!TOLLYWOOD_GIF_IDS.has(gifId)) {
-    return { ok: false, message: "Unknown Tollywood GIF." };
+
+  const gifUrl = String(payload.gifUrl ?? "").trim();
+  const gifId = String(payload.gifId ?? "").trim() || gifUrl;
+  const label = String(payload.label ?? "GIF").trim().slice(0, 80) || "GIF";
+
+  // Prefer live Tenor/Giphy URLs; fall back to curated catalog ids
+  let resolvedUrl = gifUrl;
+  if (!resolvedUrl && gifId) {
+    const fromCatalog = getGifById(gifId);
+    if (fromCatalog) resolvedUrl = fromCatalog.gifUrl;
   }
+  if (!resolvedUrl || !isAllowedGifUrl(resolvedUrl)) {
+    return { ok: false, message: "Invalid GIF. Pick one from Tenor search." };
+  }
+
   const player = ctx.room.players.find((p) => p.id === ctx.playerId);
   if (!player) return { ok: false, message: "Player not found." };
   const message: ChatMessage = {
@@ -205,6 +219,8 @@ export function doChatGif(
     playerId: player.id,
     nickname: player.nickname,
     gifId,
+    gifUrl: resolvedUrl,
+    label,
     at: Date.now(),
   };
   return { ok: true, room: ctx.room, message };
@@ -276,6 +292,7 @@ export function toPublicRoom(room: InternalRoom, viewerId: string): PublicRoom {
     youPlayerId: viewerId,
     minPlayers: MIN_PLAYERS,
     maxPlayers: MAX_PLAYERS,
+    lastPass: room.lastPass,
   };
 }
 

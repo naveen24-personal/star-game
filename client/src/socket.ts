@@ -1,6 +1,7 @@
 import { io, Socket } from "socket.io-client";
 import type { ChatMessage, PublicRoom, RoomErrorPayload } from "@chit/shared";
 
+export const apiBase = import.meta.env.PROD ? "" : "";
 const URL = import.meta.env.PROD ? undefined : "http://localhost:3001";
 
 let socket: Socket | null = null;
@@ -40,5 +41,6 @@ export const api = {
   release: (chitId: string) => getSocket().emit("chits:release", { chitId }),
   pass: (chitId: string) => getSocket().emit("chits:pass", { chitId }),
   playAgain: () => getSocket().emit("room:playAgain"),
-  sendGif: (gifId: string) => getSocket().emit("chat:gif", { gifId }),
+  sendGif: (payload: { gifId: string; gifUrl: string; label: string }) =>
+    getSocket().emit("chat:gif", payload),
 };
