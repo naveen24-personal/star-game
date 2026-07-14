@@ -1,40 +1,31 @@
 import type { PublicPlayer, PublicRoom } from "@chit/shared";
 import type { ReactNode } from "react";
+import { getGifById } from "@chit/shared";
+import { seatPosition, seatsForViewer } from "../seatLayout";
+import type { GifPopItem } from "./GifPops";
 
 type Props = {
   room: PublicRoom;
-  /** Extra status under a seat nickname */
   seatNote?: (player: PublicPlayer) => string | null;
-  center: ReactNode;
-  footer?: ReactNode;
+  /** Thrown / scattered chits (and light HUD on the wood) */
+  tableTop?: ReactNode;
+  /** Status + your hand — kept below so the table stays clear */
+  controls?: ReactNode;
+  pops?: GifPopItem[];
 };
 
-/** Seat "you" at the bottom; others clockwise around the table. */
-function seatsForViewer(room: PublicRoom): PublicPlayer[] {
-  const sorted = [...room.players].sort((a, b) => a.seat - b.seat);
-  const myIdx = sorted.findIndex((p) => p.id === room.youPlayerId);
-  if (myIdx <= 0) return sorted;
-  return [...sorted.slice(myIdx), ...sorted.slice(0, myIdx)];
-}
-
-function seatPosition(index: number, total: number): { left: string; top: string } {
-  // index 0 at bottom; then clockwise
-  const angle = Math.PI / 2 + (index * 2 * Math.PI) / Math.max(total, 1);
-  const radius = total <= 3 ? 38 : total <= 5 ? 40 : 42;
-  const x = 50 + radius * Math.cos(angle);
-  const y = 50 + radius * Math.sin(angle);
-  return { left: `${x}%`, top: `${y}%` };
-}
-
-export function TableWorkspace({ room, seatNote, center, footer }: Props) {
+export function TableWorkspace({ room, seatNote, tableTop, controls, pops = [] }: Props) {
   const seats = seatsForViewer(room);
 
   return (
     <section className="panel table-wrap">
-      <div className="table-arena" aria-label="Players sitting around the table">
+      <div
+        className={`table-arena table-arena--n${Math.min(seats.length, 8)}`}
+        aria-label="Players sitting around the table"
+      >
         <div className="table-surface">
           <div className="table-surface__wood" />
-          <div className="table-surface__center">{center}</div>
+          <div className="table-surface__play">{tableTop}</div>
         </div>
 
         {seats.map((p, i) => {
@@ -53,7 +44,8 @@ export function TableWorkspace({ room, seatNote, center, footer }: Props) {
               ]
                 .filter(Boolean)
                 .join(" ")}
-              style={pos}
+              style={{ left: `${pos.left}%`, top: `${pos.top}%` }}
+              data-player-id={p.id}
             >
               <div className="table-seat__avatar" aria-hidden>
                 {p.nickname.slice(0, 1).toUpperCase()}
@@ -70,8 +62,33 @@ export function TableWorkspace({ room, seatNote, center, footer }: Props) {
             </div>
           );
         })}
+
+        {pops.map((pop) => {
+          const seat = seats.find((s) => s.id === pop.playerId);
+          const idx = seat ? seats.indexOf(seat) : -1;
+          const pos =
+            idx >= 0
+              ? seatPosition(idx, seats.length)
+              : { left: 50, top: 50 };
+          const gif = getGifById(pop.gifId);
+          return (
+            <div
+              key={pop.id}
+              className="gif-pop gif-pop--seat"
+              style={{ left: `${pos.left}%`, top: `${pos.top}%` }}
+            >
+              <span className="gif-pop__who">{pop.nickname}</span>
+              {gif ? (
+                <img src={gif.gifUrl} alt={gif.label} />
+              ) : (
+                <span className="gif-pop__fallback">{pop.gifId}</span>
+              )}
+            </div>
+          );
+        })}
       </div>
-      {footer}
+
+      {controls && <div className="table-controls">{controls}</div>}
     </section>
   );
 }

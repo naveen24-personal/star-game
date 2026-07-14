@@ -2,11 +2,13 @@ import type { PublicRoom } from "@chit/shared";
 import { CHITS_PER_PLAYER } from "@chit/shared";
 import { api } from "../socket";
 import { ChitCard } from "../components/ChitCard";
+import { ScatteredPool } from "../components/ScatteredPool";
 import { TableWorkspace } from "../components/TableWorkspace";
+import type { GifPopItem } from "../components/GifPops";
 
-type Props = { room: PublicRoom };
+type Props = { room: PublicRoom; pops?: GifPopItem[] };
 
-export function ThrowAndPick({ room }: Props) {
+export function ThrowAndPick({ room, pops = [] }: Props) {
   const isThrower = room.throwerId === room.youPlayerId;
   const you = room.players.find((p) => p.id === room.youPlayerId);
   const hand = you?.hand ?? [];
@@ -17,17 +19,26 @@ export function ThrowAndPick({ room }: Props) {
     return (
       <TableWorkspace
         room={room}
+        pops={pops}
         seatNote={(p) => (p.id === room.throwerId ? "thrower" : "ready")}
-        center={
-          <div className="table-action">
-            <p className="eyebrow">Clubbed pile</p>
-            <h2 className="table-action__title">Chits on the table</h2>
-            <div className="pile-stack" aria-hidden>
-              <span /><span /><span />
+        tableTop={
+          <div className="table-hud">
+            <div className="pile-stack pile-stack--center" aria-hidden>
+              <span />
+              <span />
+              <span />
+              <span />
             </div>
-            <p className="lede table-action__lede">
+            <p className="table-hud__label">Clubbed — ready to throw</p>
+          </div>
+        }
+        controls={
+          <div className="table-controls__inner">
+            <p className="eyebrow">Throw</p>
+            <h2 className="table-action__title">Toss the chits on the table</h2>
+            <p className="lede">
               {isThrower
-                ? "Throw so everyone around the table can pick."
+                ? "Throw so they land randomly — like at home."
                 : "Waiting for the thrower…"}
             </p>
             {isThrower && (
@@ -48,56 +59,52 @@ export function ThrowAndPick({ room }: Props) {
   return (
     <TableWorkspace
       room={room}
+      pops={pops}
       seatNote={(p) =>
         p.hasPicked ? "locked 4" : `${p.handCount}/${CHITS_PER_PLAYER}`
       }
-      center={
-        <div className="table-action">
-          <p className="eyebrow">Pick</p>
-          <h2 className="table-action__title">
-            {claimed}/{CHITS_PER_PLAYER} claimed
-          </h2>
-          {locked ? (
-            <p className="status">Locked in. Waiting for the table…</p>
-          ) : (
-            <>
-              <p className="lede table-action__lede">
-                Tap a folded chit to claim it. Taken ones leave the pile.
-              </p>
-              <div className="chit-grid chit-grid--compact">
-                {room.pool.map((chit) => (
-                  <ChitCard
-                    key={chit.id}
-                    chit={chit}
-                    faceDown
-                    disabled={claimed >= CHITS_PER_PLAYER}
-                    onClick={() => api.claim(chit.id)}
-                  />
-                ))}
-              </div>
-              {room.pool.length === 0 && (
-                <p className="muted">No folded chits left.</p>
-              )}
-            </>
-          )}
-        </div>
+      tableTop={
+        locked ? (
+          <div className="table-hud">
+            <p className="table-hud__label">You locked 4 — waiting on others</p>
+          </div>
+        ) : (
+          <ScatteredPool
+            chits={room.pool}
+            faceDown
+            thrown
+            disabled={claimed >= CHITS_PER_PLAYER}
+            onClaim={(id) => api.claim(id)}
+          />
+        )
       }
-      footer={
-        <div className="table-footer">
-          <h3 className="subtitle">Your claims</h3>
-          <div className="chit-grid chit-grid--compact">
+      controls={
+        <div className="table-controls__inner">
+          <div className="table-controls__row">
+            <div>
+              <p className="eyebrow">Your claims</p>
+              <h2 className="table-action__title">
+                {claimed}/{CHITS_PER_PLAYER}
+              </h2>
+            </div>
+            <p className="lede table-controls__hint">
+              Tap a scattered chit to pick it. Claimed chits unfold for you.
+            </p>
+          </div>
+          <div className="hand-row">
             {hand.map((chit) => (
               <ChitCard
                 key={chit.id}
                 chit={chit}
-                faceDown
+                unfold
                 selected
+                size="tiny"
                 disabled={locked}
                 onClick={locked ? undefined : () => api.release(chit.id)}
               />
             ))}
             {hand.length === 0 && (
-              <p className="muted">None yet — claim from the center pile.</p>
+              <p className="muted">None yet — grab from the table.</p>
             )}
           </div>
         </div>
