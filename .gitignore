@@ -1,0 +1,12 @@
+node_modules/
+.tools/
+dist/
+client/dist/
+server/dist/
+shared/dist/
+.DS_Store
+*.log
+.env
+.env.*
+!.env.example
+.vite/
