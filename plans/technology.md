@@ -79,7 +79,7 @@ npm start
 1. Push this repo to GitHub (public or private).
 2. Create a **Web Service** on [Render](https://render.com) (free tier), or use the included [`render.yaml`](../render.yaml) Blueprint.
 3. Settings:
-   - **Build command:** `npm install && npm run build`
+   - **Build command:** `npm install --include=dev && npm run build`
    - **Start command:** `npm start`
    - **Environment:** `NODE_ENV=production`
 4. Open the Render URL on two devices, create/join a room, play a full round.
@@ -90,12 +90,13 @@ Cold starts on the free tier may take ~30–60s after idle.
 
 **Client → server**
 
-- `room:create` `{ nickname }`
-- `room:join` `{ code, nickname }`
+- `room:create` `{ nickname }` — rejects empty names
+- `room:join` `{ code, nickname }` — rejects duplicate nicknames
 - `room:start`
-- `chits:submit` `{ texts: string[4] }`
+- `chits:submit` `{ text }` — one text applied to all 4 chits
 - `chits:throw`
-- `chits:pick` `{ chitIds: string[4] }`
+- `chits:claim` `{ chitId }` — immediate exclusive claim
+- `chits:release` `{ chitId }` — return a claim to the pool before locking 4
 - `chits:pass` `{ chitId }`
 - `chat:gif` `{ gifId }`
 - `room:playAgain`

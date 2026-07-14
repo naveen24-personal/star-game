@@ -84,26 +84,27 @@ export function startWriting(room: InternalRoom): void {
   }
 }
 
+/**
+ * Player writes one word/phrase; the server creates CHITS_PER_PLAYER identical folded chits.
+ */
 export function submitChits(
   room: InternalRoom,
   playerId: string,
-  texts: string[]
+  text: string
 ): { ok: true } | { ok: false; message: string } {
   if (room.phase !== "writing") return { ok: false, message: "Not in writing phase." };
   const player = getPlayer(room, playerId);
   if (!player || !player.connected) return { ok: false, message: "Player not found." };
   if (player.submittedTexts) return { ok: false, message: "Already submitted." };
-  if (!Array.isArray(texts) || texts.length !== CHITS_PER_PLAYER) {
-    return { ok: false, message: `Submit exactly ${CHITS_PER_PLAYER} chits.` };
-  }
-  const cleaned = texts.map((t) => String(t).trim());
-  if (cleaned.some((t) => !t)) return { ok: false, message: "Chits cannot be empty." };
+  const cleaned = String(text ?? "").trim();
+  if (!cleaned) return { ok: false, message: "Write one non-empty chit text." };
 
-  player.submittedTexts = cleaned;
-  for (const text of cleaned) {
+  const texts = Array.from({ length: CHITS_PER_PLAYER }, () => cleaned);
+  player.submittedTexts = texts;
+  for (const t of texts) {
     room.allChits.push({
       id: randomUUID(),
-      text,
+      text: t,
       ownerId: null,
     });
   }
@@ -131,6 +132,73 @@ export function throwChits(
   return { ok: true };
 }
 
+function finishPickingIfReady(room: InternalRoom): void {
+  const connected = room.players.filter((p) => p.connected);
+  if (!connected.every((p) => p.hasPicked)) return;
+
+  room.phase = "passing";
+  room.currentTurnPlayerId = room.throwerId;
+  const throwerStillIn = connected.some((p) => p.id === room.throwerId);
+  if (!throwerStillIn && connected.length) {
+    room.currentTurnPlayerId = sortedPlayers(room).filter((p) => p.connected)[0].id;
+  }
+  const win = checkWinner(room);
+  if (win) applyWinner(room, win);
+}
+
+/**
+ * Claim one folded chit immediately. Taken chits leave the pool so others cannot pick them.
+ */
+export function claimChit(
+  room: InternalRoom,
+  playerId: string,
+  chitId: string
+): { ok: true } | { ok: false; message: string } {
+  if (room.phase !== "picking") return { ok: false, message: "Not in picking phase." };
+  const player = getPlayer(room, playerId);
+  if (!player || !player.connected) return { ok: false, message: "Player not found." };
+  if (player.hasPicked) return { ok: false, message: "You already locked your 4 chits." };
+  if (player.hand.length >= CHITS_PER_PLAYER) {
+    return { ok: false, message: `You already have ${CHITS_PER_PLAYER} chits.` };
+  }
+
+  const idx = room.pool.findIndex((c) => c.id === chitId);
+  if (idx < 0) {
+    return { ok: false, message: "That chit was already taken by another player." };
+  }
+
+  const [chit] = room.pool.splice(idx, 1);
+  chit.ownerId = playerId;
+  player.hand.push({ ...chit });
+
+  if (player.hand.length === CHITS_PER_PLAYER) {
+    player.hasPicked = true;
+    finishPickingIfReady(room);
+  }
+  return { ok: true };
+}
+
+/** Release one of your claimed chits back to the pool before you lock in at 4. */
+export function releaseChit(
+  room: InternalRoom,
+  playerId: string,
+  chitId: string
+): { ok: true } | { ok: false; message: string } {
+  if (room.phase !== "picking") return { ok: false, message: "Not in picking phase." };
+  const player = getPlayer(room, playerId);
+  if (!player || !player.connected) return { ok: false, message: "Player not found." };
+  if (player.hasPicked) return { ok: false, message: "Your 4 chits are already locked." };
+
+  const idx = player.hand.findIndex((c) => c.id === chitId);
+  if (idx < 0) return { ok: false, message: "You do not hold that chit." };
+
+  const [chit] = player.hand.splice(idx, 1);
+  chit.ownerId = null;
+  room.pool.push({ ...chit });
+  return { ok: true };
+}
+
+/** @deprecated Prefer claimChit — kept for tests that batch-assign known hands. */
 export function pickChits(
   room: InternalRoom,
   playerId: string,
@@ -150,7 +218,12 @@ export function pickChits(
   const selected: Chit[] = [];
   for (const id of chitIds) {
     const chit = room.pool.find((c) => c.id === id);
-    if (!chit) return { ok: false, message: "Chit not in pool." };
+    if (!chit) {
+      return {
+        ok: false,
+        message: "That chit was already taken by another player. Pick from the remaining pool.",
+      };
+    }
     if (chit.ownerId) return { ok: false, message: "Chit already taken." };
     selected.push(chit);
   }
@@ -161,19 +234,7 @@ export function pickChits(
   player.hand = selected.map((c) => ({ ...c }));
   player.hasPicked = true;
   room.pool = room.pool.filter((c) => !chitIds.includes(c.id));
-
-  const connected = room.players.filter((p) => p.connected);
-  if (connected.every((p) => p.hasPicked)) {
-    room.phase = "passing";
-    room.currentTurnPlayerId = room.throwerId;
-    const throwerStillIn = connected.some((p) => p.id === room.throwerId);
-    if (!throwerStillIn && connected.length) {
-      room.currentTurnPlayerId = sortedPlayers(room).filter((p) => p.connected)[0].id;
-    }
-    // Immediate win check (rare if someone picked 4 matching)
-    const win = checkWinner(room);
-    if (win) applyWinner(room, win);
-  }
+  finishPickingIfReady(room);
   return { ok: true };
 }
 

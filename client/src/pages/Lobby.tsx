@@ -11,7 +11,8 @@ export function Lobby() {
       <p className="eyebrow">Online party</p>
       <h1 className="brand">Chit Party</h1>
       <p className="lede">
-        Write four chits, throw the pile, pick four, pass right — first with four matching wins.
+        Write one chit word (applied to all four), throw the pile, pick four, pass right — first with
+        four matching wins. Nicknames must be unique.
       </p>
 
       <label className="field">

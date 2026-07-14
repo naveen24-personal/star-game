@@ -60,6 +60,15 @@ export function normalizeChitText(text: string): string {
   return text.trim().toLowerCase();
 }
 
+/** Nickname uniqueness is case-insensitive. */
+export function normalizeNickname(nickname: string): string {
+  return nickname.trim().slice(0, 24);
+}
+
+export function nicknamesEqual(a: string, b: string): boolean {
+  return normalizeNickname(a).toLowerCase() === normalizeNickname(b).toLowerCase();
+}
+
 export function chitsMatch(a: string, b: string): boolean {
   return normalizeChitText(a) === normalizeChitText(b);
 }

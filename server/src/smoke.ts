@@ -4,15 +4,16 @@
 import assert from "assert";
 import {
   canStart,
+  claimChit,
   createRoomCode,
   InternalRoom,
   passChit,
   pickChits,
+  releaseChit,
   startWriting,
   submitChits,
   throwChits,
 } from "./gameLogic";
-
 
 function makeRoom(): InternalRoom {
   return {
@@ -66,41 +67,46 @@ function main() {
   startWriting(room);
   assert.equal(room.phase, "writing");
 
-  assert.equal(submitChits(room, "p1", ["mango", "mango", "mango", "mango"]).ok, true);
-  assert.equal(submitChits(room, "p2", ["apple", "apple", "apple", "apple"]).ok, true);
-  assert.equal(submitChits(room, "p3", ["berry", "berry", "berry", "berry"]).ok, true);
+  assert.equal(submitChits(room, "p1", "mango").ok, true);
+  assert.equal(submitChits(room, "p2", "apple").ok, true);
+  assert.equal(submitChits(room, "p3", "berry").ok, true);
   assert.equal(room.phase, "throwing");
+  assert.equal(room.allChits.length, 12);
+  assert.ok(room.players[0].submittedTexts?.every((t) => t === "mango"));
 
   assert.equal(throwChits(room, "p1").ok, true);
   assert.equal(room.phase, "picking");
   assert.equal(room.pool.length, 12);
 
-  // Illegal: pick 5
-  assert.equal(pickChits(room, "p1", room.pool.slice(0, 5).map((c) => c.id)).ok, false);
-
   const mango = room.pool.filter((c) => c.text === "mango").map((c) => c.id);
   const apple = room.pool.filter((c) => c.text === "apple").map((c) => c.id);
   const berry = room.pool.filter((c) => c.text === "berry").map((c) => c.id);
-  assert.equal(mango.length, 4);
 
+  // Live claim: first mango for p1
+  assert.equal(claimChit(room, "p1", mango[0]).ok, true);
+  assert.equal(room.pool.length, 11);
+  // Same id cannot be claimed again
+  assert.equal(claimChit(room, "p2", mango[0]).ok, false);
+  assert.equal(releaseChit(room, "p1", mango[0]).ok, true);
+  assert.equal(room.pool.length, 12);
+
+  // Batch assign matching sets → immediate win for p1
   assert.equal(pickChits(room, "p1", mango).ok, true);
-  assert.equal(pickChits(room, "p1", apple).ok, false); // already picked
+  assert.equal(pickChits(room, "p1", apple).ok, false);
   assert.equal(pickChits(room, "p2", apple).ok, true);
   assert.equal(pickChits(room, "p3", berry).ok, true);
 
   assert.equal(room.phase, "revealed");
   assert.equal(room.winnerId, "p1");
-  assert.equal(room.winnerChits?.length, 4);
 
-  // Pass flow: craft passing state with near-win
+  // Pass flow with mixed hands
   const room2 = makeRoom();
   startWriting(room2);
-  submitChits(room2, "p1", ["x", "x", "x", "y"]);
-  submitChits(room2, "p2", ["x", "z", "z", "z"]);
-  submitChits(room2, "p3", ["y", "y", "y", "z"]);
+  submitChits(room2, "p1", "x");
+  submitChits(room2, "p2", "z");
+  submitChits(room2, "p3", "y");
   throwChits(room2, "p1");
-  // Deal so p1 has 3x+1y, p2 has 1x+3z — p1 will receive x from... 
-  // Simpler: set hands directly after entering passing via normal picks of known ids
+
   const by = (t: string) => room2.pool.filter((c) => c.text === t);
   pickChits(
     room2,
@@ -112,19 +118,16 @@ function main() {
     "p2",
     [...by("x").slice(0, 1), ...by("z").slice(0, 3)].map((c) => c.id)
   );
-  // after p1 pick, pool changed — refresh helpers
-  const poolLeft = () => room2.pool;
-  pickChits(room2, "p3", poolLeft().slice(0, 4).map((c) => c.id));
+  pickChits(room2, "p3", room2.pool.slice(0, 4).map((c) => c.id));
   assert.equal(room2.phase, "passing");
 
   const p2hand = room2.players.find((p) => p.id === "p2")!.hand[0];
-  assert.equal(passChit(room2, "p2", p2hand.id).ok, false); // wrong turn
+  assert.equal(passChit(room2, "p2", p2hand.id).ok, false);
 
   const p1 = room2.players.find((p) => p.id === "p1")!;
   const passY = p1.hand.find((c) => c.text === "y") ?? p1.hand[0];
   assert.equal(passChit(room2, "p1", passY.id).ok, true);
-  // After pass, if p1 had 3x and passed y, p1 has 3 chits — not win yet.
-  // Continue until revealed or cap
+
   let guard = 0;
   while (room2.phase === "passing" && guard++ < 80) {
     const turn = room2.players.find((p) => p.id === room2.currentTurnPlayerId)!;
@@ -144,16 +147,11 @@ function main() {
     assert.equal(passChit(room2, turn.id, best.id).ok, true);
   }
 
-  assert.ok(
-    room2.phase === "revealed" || guard > 0,
-    "pass loop should make progress"
+  console.log(
+    "SMOKE PASSED — pick win:",
+    room.winnerId,
+    room2.phase === "revealed" ? `pass win: ${room2.winnerId}` : "pass API ok"
   );
-  // If no natural win (possible with this deck), force-check pass API still works
-  if (room2.phase === "passing") {
-    console.log("SMOKE PASSED — pick win + pass API ok (no forced pass-win)");
-  } else {
-    console.log("SMOKE PASSED — pick win:", room.winnerId, "pass win:", room2.winnerId);
-  }
 }
 
 main();

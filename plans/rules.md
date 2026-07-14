@@ -19,14 +19,15 @@ Two chits match if their text is the same after **trim + lowercase**.
 ### 1. Lobby
 
 1. One player creates a room (becomes host/thrower) and shares the **6-character room code**.
-2. Others join with the code and a nickname.
+2. Others join with the code and a **unique nickname** (case-insensitive; duplicates are rejected).
 3. Host starts the game when there are **at least 3** and at most **8** players.
 
 ### 2. Writing (fold your chits)
 
-1. Each player secretly writes **exactly 4** non-empty chit texts.
-2. Chits are “folded”: other players cannot read them.
-3. When every player has submitted 4 chits, the game moves to throwing.
+1. Each player secretly writes **one** non-empty word or phrase.
+2. The server creates **exactly 4** identical folded chits with that text.
+3. Other players cannot read them.
+4. When every player has submitted, the game moves to throwing.
 
 ### 3. Throwing
 
@@ -36,11 +37,11 @@ Two chits match if their text is the same after **trim + lowercase**.
 
 ### 4. Picking
 
-1. The shuffled pool is shown to everyone.
-2. Each player must pick **exactly 4** chits from the pool.
-3. You **cannot** pick more than 4.
-4. You **cannot** take a chit another player already claimed.
-5. When every player has confirmed 4 chits, passing begins. The thrower takes the **first turn**.
+1. The shuffled pool is shown to everyone (folded).
+2. Each player claims chits **one at a time** by tapping them.
+3. A claimed chit is **removed from the pool immediately** — other players cannot select it.
+4. You may release one of your claimed chits back to the pool until you hold **exactly 4**.
+5. At 4 claims, your hand locks. When every player has 4, passing begins. The thrower takes the **first turn**.
 
 ### 5. Passing
 

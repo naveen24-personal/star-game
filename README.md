@@ -35,9 +35,9 @@ Then open `http://localhost:3001`.
 
 1. Push this repo to GitHub.
 2. New **Web Service** on https://render.com (free tier).
-3. **Build command:** `npm install && npm run build`
+3. **Build command:** `npm install --include=dev && npm run build`
 4. **Start command:** `npm start`
-5. Env: `NODE_ENV=production`
+5. Env: `NODE_ENV=production` (runtime only; `--include=dev` is required so Vite/TypeScript install during build)
 6. Open the Render URL and play with friends.
 
 ## Smoke test

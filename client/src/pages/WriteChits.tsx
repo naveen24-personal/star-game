@@ -7,40 +7,38 @@ type Props = { room: PublicRoom };
 
 export function WriteChits({ room }: Props) {
   const you = room.players.find((p) => p.id === room.youPlayerId);
-  const [texts, setTexts] = useState(["", "", "", ""]);
+  const [text, setText] = useState("");
   const submitted = you?.hasSubmittedChits ?? false;
-
-  const update = (i: number, v: string) => {
-    setTexts((prev) => prev.map((t, idx) => (idx === i ? v : t)));
-  };
-
-  const ready = texts.every((t) => t.trim().length > 0);
+  const ready = text.trim().length > 0;
 
   return (
     <section className="panel">
       <p className="eyebrow">Writing</p>
-      <h2 className="title">Fold your {CHITS_PER_PLAYER} chits</h2>
-      <p className="lede">Write anything — matching uses exact text (ignore case).</p>
+      <h2 className="title">Write your chit</h2>
+      <p className="lede">
+        Enter one word or phrase. It is copied onto all {CHITS_PER_PLAYER} of your folded chits.
+      </p>
 
       {submitted ? (
         <p className="status">Submitted. Waiting for others…</p>
       ) : (
         <>
-          <div className="write-grid">
-            {texts.map((t, i) => (
-              <label key={i} className="field">
-                <span>Chit {i + 1}</span>
-                <input value={t} onChange={(e) => update(i, e.target.value)} maxLength={40} />
-              </label>
-            ))}
-          </div>
+          <label className="field">
+            <span>Your chit text</span>
+            <input
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              maxLength={40}
+              placeholder="e.g. mango"
+            />
+          </label>
           <button
             type="button"
             className="btn btn--primary"
             disabled={!ready}
-            onClick={() => api.submitChits(texts.map((t) => t.trim()))}
+            onClick={() => api.submitChitText(text.trim())}
           >
-            Fold & submit
+            Fold & submit ({CHITS_PER_PLAYER} chits)
           </button>
         </>
       )}

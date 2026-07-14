@@ -1,4 +1,3 @@
-import { useState } from "react";
 import type { PublicRoom } from "@chit/shared";
 import { CHITS_PER_PLAYER } from "@chit/shared";
 import { api } from "../socket";
@@ -9,7 +8,9 @@ type Props = { room: PublicRoom };
 export function ThrowAndPick({ room }: Props) {
   const isThrower = room.throwerId === room.youPlayerId;
   const you = room.players.find((p) => p.id === room.youPlayerId);
-  const [selected, setSelected] = useState<string[]>([]);
+  const hand = you?.hand ?? [];
+  const claimed = hand.length;
+  const locked = you?.hasPicked ?? false;
 
   if (room.phase === "throwing") {
     return (
@@ -30,52 +31,58 @@ export function ThrowAndPick({ room }: Props) {
     );
   }
 
-  const toggle = (id: string) => {
-    setSelected((prev) => {
-      if (prev.includes(id)) return prev.filter((x) => x !== id);
-      if (prev.length >= CHITS_PER_PLAYER) return prev;
-      return [...prev, id];
-    });
-  };
-
   return (
     <section className="panel">
       <p className="eyebrow">Pick</p>
       <h2 className="title">
-        Choose {CHITS_PER_PLAYER} chits ({selected.length}/{CHITS_PER_PLAYER})
+        Pick {CHITS_PER_PLAYER} chits ({claimed}/{CHITS_PER_PLAYER})
       </h2>
-      <p className="lede">Folded pile — pick exactly four. You cannot take more.</p>
+      <p className="lede">
+        Tap a folded chit to claim it instantly. Taken chits disappear for everyone else. Tap one of
+        yours to release it before you lock {CHITS_PER_PLAYER}.
+      </p>
 
-      {you?.hasPicked ? (
-        <p className="status">You locked in 4. Waiting for others…</p>
+      {locked ? (
+        <p className="status">You locked in {CHITS_PER_PLAYER}. Waiting for others…</p>
       ) : (
         <>
+          <h3 className="subtitle">Pool ({room.pool.length} left)</h3>
           <div className="chit-grid">
             {room.pool.map((chit) => (
               <ChitCard
                 key={chit.id}
                 chit={chit}
                 faceDown
-                selected={selected.includes(chit.id)}
-                onClick={() => toggle(chit.id)}
+                disabled={claimed >= CHITS_PER_PLAYER}
+                onClick={() => api.claim(chit.id)}
               />
             ))}
           </div>
-          <button
-            type="button"
-            className="btn btn--primary"
-            disabled={selected.length !== CHITS_PER_PLAYER}
-            onClick={() => api.pick(selected)}
-          >
-            Confirm 4 chits
-          </button>
+          {room.pool.length === 0 && (
+            <p className="muted">No folded chits left in the pool.</p>
+          )}
         </>
       )}
+
+      <h3 className="subtitle">Your claims</h3>
+      <div className="chit-grid">
+        {hand.map((chit) => (
+          <ChitCard
+            key={chit.id}
+            chit={chit}
+            faceDown
+            selected
+            disabled={locked}
+            onClick={locked ? undefined : () => api.release(chit.id)}
+          />
+        ))}
+        {hand.length === 0 && <p className="muted">None yet — claim from the pool.</p>}
+      </div>
 
       <ul className="player-list compact">
         {room.players.map((p) => (
           <li key={p.id}>
-            {p.nickname}: {p.hasPicked ? "picked" : "picking…"}
+            {p.nickname}: {p.hasPicked ? "locked 4" : `${p.handCount}/4 claiming…`}
           </li>
         ))}
       </ul>

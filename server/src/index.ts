@@ -7,12 +7,12 @@ import {
   createRoom,
   disconnectSocket,
   doChatGif,
+  doClaim,
   doPass,
-  doPick,
   doPlayAgain,
+  doRelease,
   doSubmitChits,
   doThrow,
-  getBinding,
   joinRoom,
   listViewerSocketIds,
   startGame,
@@ -56,14 +56,17 @@ function emitError(socketId: string, message: string) {
 
 io.on("connection", (socket) => {
   socket.on("room:create", (payload: { nickname?: string }) => {
-    const nickname = payload?.nickname ?? "Player";
-    const { room } = createRoom(socket.id, nickname);
-    socket.join(room.code);
-    emitRoom(room);
+    const result = createRoom(socket.id, payload?.nickname ?? "");
+    if (!result.ok) {
+      emitError(socket.id, result.message);
+      return;
+    }
+    socket.join(result.room.code);
+    emitRoom(result.room);
   });
 
   socket.on("room:join", (payload: { code?: string; nickname?: string }) => {
-    const result = joinRoom(socket.id, payload?.code ?? "", payload?.nickname ?? "Player");
+    const result = joinRoom(socket.id, payload?.code ?? "", payload?.nickname ?? "");
     if (!result.ok) {
       emitError(socket.id, result.message);
       return;
@@ -81,8 +84,14 @@ io.on("connection", (socket) => {
     emitRoom(result.room);
   });
 
-  socket.on("chits:submit", (payload: { texts?: string[] }) => {
-    const result = doSubmitChits(socket.id, payload?.texts ?? []);
+  socket.on("chits:submit", (payload: { text?: string; texts?: string[] }) => {
+    const text =
+      typeof payload?.text === "string"
+        ? payload.text
+        : Array.isArray(payload?.texts)
+          ? String(payload.texts[0] ?? "")
+          : "";
+    const result = doSubmitChits(socket.id, text);
     if (!result.ok) {
       emitError(socket.id, result.message);
       return;
@@ -99,8 +108,17 @@ io.on("connection", (socket) => {
     emitRoom(result.room);
   });
 
-  socket.on("chits:pick", (payload: { chitIds?: string[] }) => {
-    const result = doPick(socket.id, payload?.chitIds ?? []);
+  socket.on("chits:claim", (payload: { chitId?: string }) => {
+    const result = doClaim(socket.id, payload?.chitId ?? "");
+    if (!result.ok) {
+      emitError(socket.id, result.message);
+      return;
+    }
+    emitRoom(result.room);
+  });
+
+  socket.on("chits:release", (payload: { chitId?: string }) => {
+    const result = doRelease(socket.id, payload?.chitId ?? "");
     if (!result.ok) {
       emitError(socket.id, result.message);
       return;

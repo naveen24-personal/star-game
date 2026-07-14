@@ -6,16 +6,19 @@ import {
   PublicPlayer,
   PublicRoom,
   TOLLYWOOD_GIF_IDS,
+  normalizeNickname,
+  nicknamesEqual,
 } from "@chit/shared";
 import { randomUUID } from "crypto";
 import {
   canStart,
+  claimChit,
   createRoomCode,
   handleDisconnectLogic,
   InternalPlayer,
   InternalRoom,
   passChit,
-  pickChits,
+  releaseChit,
   resetToLobby,
   startWriting,
   submitChits,
@@ -33,13 +36,25 @@ function uniqueCode(): string {
   return createRoomCode() + createRoomCode().slice(0, 2);
 }
 
-export function createRoom(socketId: string, nickname: string): { room: InternalRoom; playerId: string } {
+function isNicknameTaken(room: InternalRoom, nickname: string): boolean {
+  return room.players.some(
+    (p) => p.connected && nicknamesEqual(p.nickname, nickname)
+  );
+}
+
+export function createRoom(
+  socketId: string,
+  nickname: string
+): { ok: true; room: InternalRoom; playerId: string } | { ok: false; message: string } {
+  const name = normalizeNickname(nickname);
+  if (!name) return { ok: false, message: "Nickname is required." };
+
   const code = uniqueCode();
   const playerId = randomUUID();
   const player: InternalPlayer = {
     id: playerId,
     socketId,
-    nickname: nickname.trim().slice(0, 24) || "Player",
+    nickname: name,
     seat: 0,
     connected: true,
     submittedTexts: null,
@@ -60,7 +75,7 @@ export function createRoom(socketId: string, nickname: string): { room: Internal
   };
   rooms.set(code, room);
   socketToRoom.set(socketId, { roomCode: code, playerId });
-  return { room, playerId };
+  return { ok: true, room, playerId };
 }
 
 export function joinRoom(
@@ -74,6 +89,12 @@ export function joinRoom(
   const connected = room.players.filter((p) => p.connected);
   if (connected.length >= MAX_PLAYERS) return { ok: false, message: "Room is full." };
 
+  const name = normalizeNickname(nickname);
+  if (!name) return { ok: false, message: "Nickname is required." };
+  if (isNicknameTaken(room, name)) {
+    return { ok: false, message: "That name is already taken. Choose another." };
+  }
+
   const playerId = randomUUID();
   const seat = room.players.length
     ? Math.max(...room.players.map((p) => p.seat)) + 1
@@ -81,7 +102,7 @@ export function joinRoom(
   room.players.push({
     id: playerId,
     socketId,
-    nickname: nickname.trim().slice(0, 24) || "Player",
+    nickname: name,
     seat,
     connected: true,
     submittedTexts: null,
@@ -118,10 +139,10 @@ export function startGame(
   return { ok: true, room };
 }
 
-export function doSubmitChits(socketId: string, texts: string[]) {
+export function doSubmitChits(socketId: string, text: string) {
   const ctx = requirePlayer(socketId);
   if (!ctx.ok) return ctx;
-  const result = submitChits(ctx.room, ctx.playerId, texts);
+  const result = submitChits(ctx.room, ctx.playerId, text);
   if (!result.ok) return result;
   return { ok: true as const, room: ctx.room };
 }
@@ -134,10 +155,18 @@ export function doThrow(socketId: string) {
   return { ok: true as const, room: ctx.room };
 }
 
-export function doPick(socketId: string, chitIds: string[]) {
+export function doClaim(socketId: string, chitId: string) {
   const ctx = requirePlayer(socketId);
   if (!ctx.ok) return ctx;
-  const result = pickChits(ctx.room, ctx.playerId, chitIds);
+  const result = claimChit(ctx.room, ctx.playerId, chitId);
+  if (!result.ok) return result;
+  return { ok: true as const, room: ctx.room };
+}
+
+export function doRelease(socketId: string, chitId: string) {
+  const ctx = requirePlayer(socketId);
+  if (!ctx.ok) return ctx;
+  const result = releaseChit(ctx.room, ctx.playerId, chitId);
   if (!result.ok) return result;
   return { ok: true as const, room: ctx.room };
 }
