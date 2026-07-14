@@ -22,24 +22,22 @@ export function ThrowAndPick({ room, pops = [] }: Props) {
         pops={pops}
         seatNote={(p) => (p.id === room.throwerId ? "thrower" : "ready")}
         tableTop={
-          <div className="table-hud">
-            <div className="pile-stack pile-stack--center" aria-hidden>
+          <div className="club-ready">
+            <div className="club-ready__stack" aria-hidden>
+              <span />
               <span />
               <span />
               <span />
               <span />
             </div>
-            <p className="table-hud__label">Clubbed — ready to throw</p>
+            <div className="club-ready__reflect" aria-hidden />
           </div>
         }
-        controls={
-          <div className="table-controls__inner">
-            <p className="eyebrow">Throw</p>
-            <h2 className="table-action__title">Toss the chits on the table</h2>
-            <p className="lede">
-              {isThrower
-                ? "Throw so they land randomly — like at home."
-                : "Waiting for the thrower…"}
+        banner={
+          <div className="uno-banner__inner">
+            <p className="uno-banner__title">Clubbed</p>
+            <p className="uno-banner__sub">
+              {isThrower ? "Throw the pile onto the table" : "Waiting for thrower…"}
             </p>
             {isThrower && (
               <button
@@ -52,6 +50,11 @@ export function ThrowAndPick({ room, pops = [] }: Props) {
             )}
           </div>
         }
+        myHand={
+          <div className="my-hand my-hand--waiting">
+            <p className="my-hand__hint">Your hand appears here after you pick</p>
+          </div>
+        }
       />
     );
   }
@@ -61,50 +64,58 @@ export function ThrowAndPick({ room, pops = [] }: Props) {
       room={room}
       pops={pops}
       seatNote={(p) =>
-        p.hasPicked ? "locked 4" : `${p.handCount}/${CHITS_PER_PLAYER}`
+        p.hasPicked ? "done" : `${p.handCount}/${CHITS_PER_PLAYER}`
       }
       tableTop={
+        <ScatteredPool
+          chits={room.pool}
+          faceDown
+          thrown
+          disabled={locked || claimed >= CHITS_PER_PLAYER}
+          onClaim={(id) => api.claim(id)}
+        />
+      }
+      banner={
         locked ? (
-          <div className="table-hud">
-            <p className="table-hud__label">You locked 4 — waiting on others</p>
+          <div className="uno-banner__inner">
+            <p className="uno-banner__title">Locked {CHITS_PER_PLAYER}</p>
+            <p className="uno-banner__sub">Waiting for everyone…</p>
           </div>
         ) : (
-          <ScatteredPool
-            chits={room.pool}
-            faceDown
-            thrown
-            disabled={claimed >= CHITS_PER_PLAYER}
-            onClaim={(id) => api.claim(id)}
-          />
-        )
-      }
-      controls={
-        <div className="table-controls__inner">
-          <div className="table-controls__row">
-            <div>
-              <p className="eyebrow">Your claims</p>
-              <h2 className="table-action__title">
-                {claimed}/{CHITS_PER_PLAYER}
-              </h2>
-            </div>
-            <p className="lede table-controls__hint">
-              Tap a scattered chit to pick it. Claimed chits unfold for you.
+          <div className="uno-banner__inner uno-banner__inner--subtle">
+            <p className="uno-banner__sub">
+              Tap a folded chit on the table · {claimed}/{CHITS_PER_PLAYER}
             </p>
           </div>
-          <div className="hand-row">
-            {hand.map((chit) => (
-              <ChitCard
-                key={chit.id}
-                chit={chit}
-                unfold
-                selected
-                size="tiny"
-                disabled={locked}
-                onClick={locked ? undefined : () => api.release(chit.id)}
-              />
-            ))}
+        )
+      }
+      myHand={
+        <div className="my-hand">
+          <div className="my-hand__fan">
+            {hand.map((chit, i) => {
+              const mid = (hand.length - 1) / 2;
+              const offset = i - mid;
+              return (
+                <div
+                  key={chit.id}
+                  className="my-hand__card"
+                  style={{
+                    transform: `translateX(${offset * 28}px) rotate(${offset * 6}deg)`,
+                    zIndex: i,
+                  }}
+                >
+                  <ChitCard
+                    chit={chit}
+                    unfold
+                    selected
+                    disabled={locked}
+                    onClick={locked ? undefined : () => api.release(chit.id)}
+                  />
+                </div>
+              );
+            })}
             {hand.length === 0 && (
-              <p className="muted">None yet — grab from the table.</p>
+              <p className="my-hand__hint">Pick from the messy pile in the center</p>
             )}
           </div>
         </div>

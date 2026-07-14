@@ -12,6 +12,7 @@ export function PassRound({ room, pops = [] }: Props) {
   const you = room.players.find((p) => p.id === room.youPlayerId);
   const turnPlayer = room.players.find((p) => p.id === room.currentTurnPlayerId);
   const [selected, setSelected] = useState<string | null>(null);
+  const hand = you?.hand ?? [];
 
   const myIndex = room.players.findIndex((p) => p.id === room.youPlayerId);
   const right = room.players[(myIndex + 1) % room.players.length];
@@ -20,37 +21,19 @@ export function PassRound({ room, pops = [] }: Props) {
     <TableWorkspace
       room={room}
       pops={pops}
-      seatNote={(p) => {
-        const bits = [`${p.handCount}`];
-        if (p.id === room.currentTurnPlayerId) bits.push("turn");
-        return bits.join(" · ");
-      }}
-      tableTop={
-        <div className="table-hud">
-          <p className="table-hud__label">
-            {myTurn
-              ? `Pass one to ${right?.nickname ?? "right"}`
-              : `${turnPlayer?.nickname ?? "Player"}’s turn`}
+      showPassRing
+      seatNote={(p) => (p.id === room.currentTurnPlayerId ? "turn" : null)}
+      tableTop={<div className="pass-center-pad" aria-hidden />}
+      banner={
+        <div className="uno-banner__inner">
+          <p className="uno-banner__title">
+            {myTurn ? "Your turn" : `${turnPlayer?.nickname ?? "Player"}`}
           </p>
-        </div>
-      }
-      controls={
-        <div className="table-controls__inner">
-          <p className="eyebrow">Your hand</p>
-          <h2 className="table-action__title">Pass one to the right</h2>
-          <div className="hand-row">
-            {(you?.hand ?? []).map((chit) => (
-              <ChitCard
-                key={chit.id}
-                chit={chit}
-                unfold
-                selected={selected === chit.id}
-                size="tiny"
-                onClick={myTurn ? () => setSelected(chit.id) : undefined}
-                disabled={!myTurn}
-              />
-            ))}
-          </div>
+          <p className="uno-banner__sub">
+            {myTurn
+              ? `Pass one chit to ${right?.nickname ?? "right"}`
+              : "Passing around the table →"}
+          </p>
           {myTurn && (
             <button
               type="button"
@@ -66,6 +49,34 @@ export function PassRound({ room, pops = [] }: Props) {
               Pass to {right?.nickname ?? "right"}
             </button>
           )}
+        </div>
+      }
+      myHand={
+        <div className="my-hand">
+          <div className="my-hand__fan">
+            {hand.map((chit, i) => {
+              const mid = (hand.length - 1) / 2;
+              const offset = i - mid;
+              return (
+                <div
+                  key={chit.id}
+                  className={`my-hand__card ${selected === chit.id ? "my-hand__card--selected" : ""}`}
+                  style={{
+                    transform: `translateX(${offset * 32}px) rotate(${offset * 7}deg)`,
+                    zIndex: i,
+                  }}
+                >
+                  <ChitCard
+                    chit={chit}
+                    unfold
+                    selected={selected === chit.id}
+                    onClick={myTurn ? () => setSelected(chit.id) : undefined}
+                    disabled={!myTurn}
+                  />
+                </div>
+              );
+            })}
+          </div>
         </div>
       }
     />

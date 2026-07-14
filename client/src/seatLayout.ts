@@ -1,6 +1,6 @@
 import type { PublicPlayer, PublicRoom } from "@chit/shared";
 
-/** Seat "you" at the bottom; others clockwise around the table. */
+/** Seat "you" at the bottom; others clockwise for pass-right logic. */
 export function seatsForViewer(room: PublicRoom): PublicPlayer[] {
   const sorted = [...room.players].sort((a, b) => a.seat - b.seat);
   const myIdx = sorted.findIndex((p) => p.id === room.youPlayerId);
@@ -8,19 +8,35 @@ export function seatsForViewer(room: PublicRoom): PublicPlayer[] {
   return [...sorted.slice(myIdx), ...sorted.slice(0, myIdx)];
 }
 
-/** Position as % of the table arena. Index 0 = bottom (you). */
+export function opponentsForViewer(room: PublicRoom): PublicPlayer[] {
+  return seatsForViewer(room).filter((p) => p.id !== room.youPlayerId);
+}
+
+/**
+ * UNO-style top arc: opponents left → right along the upper edge.
+ * Middle seat sits a bit higher; sides a bit lower.
+ */
+export function opponentPosition(
+  index: number,
+  totalOpponents: number
+): { left: number; top: number } {
+  const n = Math.max(totalOpponents, 1);
+  if (n === 1) return { left: 50, top: 11 };
+  const t = index / (n - 1);
+  const left = 11 + t * 78;
+  const top = 10 + (1 - Math.sin(Math.PI * t)) * 12;
+  return { left, top };
+}
+
+/** Full seat map including you at bottom-center (for GIF pops / pass flight). */
 export function seatPosition(
   index: number,
   total: number
 ): { left: number; top: number } {
-  const n = Math.max(total, 1);
-  const angle = Math.PI / 2 + (index * 2 * Math.PI) / n;
-  // Keep seats outside the wood so the center stays clear for thrown chits
-  const radius = n <= 3 ? 46 : n <= 5 ? 47 : 48;
-  return {
-    left: 50 + radius * Math.cos(angle),
-    top: 50 + radius * Math.sin(angle),
-  };
+  // index 0 = you (bottom)
+  if (index === 0) return { left: 50, top: 88 };
+  const oppCount = Math.max(total - 1, 1);
+  return opponentPosition(index - 1, oppCount);
 }
 
 export function seatPositionMap(room: PublicRoom): Map<string, { left: number; top: number }> {
@@ -41,7 +57,7 @@ function hashId(id: string): number {
   return Math.abs(h >>> 0);
 }
 
-/** Stable scatter on the table (looks random, stays put across re-renders). */
+/** Messy clubbed pile in the center of the table. */
 export function scatterStyle(id: string, index: number, total: number): {
   left: string;
   top: string;
@@ -49,20 +65,19 @@ export function scatterStyle(id: string, index: number, total: number): {
   animationDelay: string;
 } {
   const h = hashId(id);
-  // Spiral-ish base so 20+ chits don't all stack in one corner
-  const ring = 0.18 + (index % 5) * 0.07;
-  const baseAngle = (index / Math.max(total, 1)) * Math.PI * 2 + ((h % 100) / 100) * 0.8;
-  const jitterR = ((h >> 3) % 12) / 100;
+  const ring = 0.08 + (index % 6) * 0.045;
+  const baseAngle = (index / Math.max(total, 1)) * Math.PI * 2 + ((h % 100) / 100) * 0.9;
+  const jitterR = ((h >> 3) % 10) / 140;
   const r = ring + jitterR;
-  const cx = 50 + r * 100 * Math.cos(baseAngle) * 0.42;
-  const cy = 50 + r * 100 * Math.sin(baseAngle) * 0.38;
-  const left = Math.min(88, Math.max(8, cx + (((h >> 9) % 11) - 5)));
-  const top = Math.min(86, Math.max(10, cy + (((h >> 14) % 11) - 5)));
-  const rot = ((h >> 18) % 70) - 35;
+  const cx = 50 + r * 100 * Math.cos(baseAngle) * 0.55;
+  const cy = 48 + r * 100 * Math.sin(baseAngle) * 0.42;
+  const left = Math.min(78, Math.max(22, cx + (((h >> 9) % 9) - 4)));
+  const top = Math.min(70, Math.max(28, cy + (((h >> 14) % 9) - 4)));
+  const rot = ((h >> 18) % 80) - 40;
   return {
     left: `${left}%`,
     top: `${top}%`,
     transform: `translate(-50%, -50%) rotate(${rot}deg)`,
-    animationDelay: `${Math.min(index * 35, 900)}ms`,
+    animationDelay: `${Math.min(index * 28, 800)}ms`,
   };
 }

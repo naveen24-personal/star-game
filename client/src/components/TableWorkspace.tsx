@@ -1,19 +1,46 @@
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import type { PublicPlayer, PublicRoom } from "@chit/shared";
 import { getGifById } from "@chit/shared";
-import { seatPosition, seatsForViewer } from "../seatLayout";
+import {
+  opponentPosition,
+  opponentsForViewer,
+  seatPosition,
+  seatsForViewer,
+} from "../seatLayout";
 import type { GifPopItem } from "./GifPops";
+import { OpponentFan } from "./OpponentFan";
 
 type Props = {
   room: PublicRoom;
   seatNote?: (player: PublicPlayer) => string | null;
+  /** Center table content (scattered clubbed pile, etc.) */
   tableTop?: ReactNode;
-  controls?: ReactNode;
+  /** Local player's hand + actions at bottom */
+  myHand?: ReactNode;
+  /** Optional center banner (turn +2 style status) */
+  banner?: ReactNode;
+  /** Show clockwise pass ring during passing */
+  showPassRing?: boolean;
   pops?: GifPopItem[];
 };
 
-export function TableWorkspace({ room, seatNote, tableTop, controls, pops = [] }: Props) {
+function fanAlign(leftPct: number): "left" | "center" | "right" {
+  if (leftPct < 28) return "left";
+  if (leftPct > 72) return "right";
+  return "center";
+}
+
+export function TableWorkspace({
+  room,
+  seatNote,
+  tableTop,
+  myHand,
+  banner,
+  showPassRing,
+  pops = [],
+}: Props) {
   const seats = seatsForViewer(room);
+  const opponents = opponentsForViewer(room);
   const [flightKey, setFlightKey] = useState<string | null>(null);
 
   useEffect(() => {
@@ -36,50 +63,48 @@ export function TableWorkspace({ room, seatNote, tableTop, controls, pops = [] }
   })();
 
   return (
-    <section className="panel table-wrap">
-      <div
-        className={`table-arena table-arena--n${Math.min(seats.length, 8)}`}
-        aria-label="Players sitting around the table"
-      >
-        <div className="table-surface">
-          <div className="table-surface__wood" />
-          <div className="table-surface__play">{tableTop}</div>
-        </div>
+    <section className="uno-stage" aria-label="Table after clubbing">
+      <div className="uno-stage__glow" aria-hidden />
 
-        {seats.map((p, i) => {
-          const pos = seatPosition(i, seats.length);
-          const isYou = p.id === room.youPlayerId;
+      <div className="uno-table">
+        {opponents.map((p, i) => {
+          const pos = opponentPosition(i, opponents.length);
           const isTurn = p.id === room.currentTurnPlayerId;
           const isHost = p.id === room.hostId;
           const note = seatNote?.(p);
+          const align = fanAlign(pos.left);
           return (
             <div
               key={p.id}
-              className={[
-                "table-seat",
-                isYou ? "table-seat--you" : "",
-                isTurn ? "table-seat--turn" : "",
-              ]
-                .filter(Boolean)
-                .join(" ")}
+              className={`uno-opp ${isTurn ? "uno-opp--turn" : ""}`}
               style={{ left: `${pos.left}%`, top: `${pos.top}%` }}
               data-player-id={p.id}
             >
-              <div className="table-seat__avatar" aria-hidden>
-                {p.nickname.slice(0, 1).toUpperCase()}
-              </div>
-              <div className="table-seat__name">
-                {p.nickname}
-                {isYou ? " (you)" : ""}
-              </div>
-              <div className="table-seat__meta">
-                {isHost ? "host" : ""}
-                {isHost && note ? " · " : ""}
-                {note ?? ""}
+              <OpponentFan count={p.handCount} align={align} />
+              <div className="uno-badge">
+                <div className="uno-badge__avatar" aria-hidden>
+                  {p.nickname.slice(0, 1).toUpperCase()}
+                </div>
+                <div className="uno-badge__meta">
+                  <span className="uno-badge__name">{p.nickname}</span>
+                  <span className="uno-badge__count">
+                    {p.handCount}
+                    {isHost ? " · host" : ""}
+                    {note ? ` · ${note}` : ""}
+                  </span>
+                </div>
               </div>
             </div>
           );
         })}
+
+        <div className="uno-center">
+          {showPassRing && <div className="uno-ring" aria-hidden />}
+          <div className="uno-pile-zone">
+            {tableTop}
+            {banner && <div className="uno-banner">{banner}</div>}
+          </div>
+        </div>
 
         {passFlight && (
           <div
@@ -95,7 +120,7 @@ export function TableWorkspace({ room, seatNote, tableTop, controls, pops = [] }
             }
             aria-hidden
           >
-            <span className="pass-flight__chit">Folded</span>
+            <span className="pass-flight__chit" />
           </div>
         )}
 
@@ -120,9 +145,11 @@ export function TableWorkspace({ room, seatNote, tableTop, controls, pops = [] }
             </div>
           );
         })}
-      </div>
 
-      {controls && <div className="table-controls">{controls}</div>}
+        <div className="uno-me" data-player-id={room.youPlayerId}>
+          {myHand}
+        </div>
+      </div>
     </section>
   );
 }

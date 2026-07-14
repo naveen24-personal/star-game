@@ -61,8 +61,8 @@ export default function App() {
 
   return (
     <div className={`app ${tablePhase ? "app--table" : ""}`}>
-      <div className="backdrop" aria-hidden />
-      <main className={`shell ${tablePhase ? "shell--wide" : ""}`}>
+      <div className={`backdrop ${tablePhase ? "backdrop--table" : ""}`} aria-hidden />
+      <main className={`shell ${tablePhase ? "shell--table" : ""}`}>
         {!room && <Lobby />}
         {room?.phase === "lobby" && <WaitingLobby room={room} />}
         {room?.phase === "writing" && <WriteChits room={room} />}
