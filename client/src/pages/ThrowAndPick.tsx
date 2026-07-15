@@ -91,29 +91,18 @@ export function ThrowAndPick({ room, pops = [] }: Props) {
       }
       myHand={
         <div className="my-hand">
-          <div className="my-hand__fan">
-            {hand.map((chit, i) => {
-              const mid = (hand.length - 1) / 2;
-              const offset = i - mid;
-              return (
-                <div
-                  key={chit.id}
-                  className="my-hand__card"
-                  style={{
-                    transform: `translateX(${offset * 28}px) rotate(${offset * 6}deg)`,
-                    zIndex: i,
-                  }}
-                >
-                  <ChitCard
-                    chit={chit}
-                    unfold
-                    selected
-                    disabled={locked}
-                    onClick={locked ? undefined : () => api.release(chit.id)}
-                  />
-                </div>
-              );
-            })}
+          <div className="my-hand__row">
+            {hand.map((chit) => (
+              <div key={chit.id} className="my-hand__card">
+                <ChitCard
+                  chit={chit}
+                  unfold
+                  selected
+                  disabled={locked}
+                  onClick={locked ? undefined : () => api.release(chit.id)}
+                />
+              </div>
+            ))}
             {hand.length === 0 && (
               <p className="my-hand__hint">Pick from the messy pile in the center</p>
             )}

@@ -883,18 +883,21 @@ body {
   text-align: center;
 }
 
-.my-hand__fan {
-  position: relative;
-  height: 150px;
-  width: 100%;
+.my-hand__row {
   display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
   justify-content: center;
   align-items: flex-end;
+  gap: 0.65rem;
+  width: 100%;
+  min-height: 140px;
+  padding: 0.25rem 0.5rem;
 }
 
 .my-hand__card {
-  position: absolute;
-  bottom: 0;
+  position: relative;
+  flex: 0 0 auto;
   width: 92px;
   transition: transform 0.15s ease;
   filter: drop-shadow(0 12px 14px rgba(0, 0, 0, 0.4));
@@ -907,8 +910,7 @@ body {
 }
 
 .my-hand__card--selected {
-  z-index: 20 !important;
-  transform: translateY(-18px) !important;
+  transform: translateY(-14px);
 }
 
 .pass-flight {
@@ -981,8 +983,9 @@ body {
     margin-left: -15px;
   }
 
-  .my-hand__fan {
-    height: 126px;
+  .my-hand__row {
+    min-height: 118px;
+    gap: 0.45rem;
   }
 
   .my-hand__card,

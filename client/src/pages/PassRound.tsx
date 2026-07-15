@@ -53,29 +53,21 @@ export function PassRound({ room, pops = [] }: Props) {
       }
       myHand={
         <div className="my-hand">
-          <div className="my-hand__fan">
-            {hand.map((chit, i) => {
-              const mid = (hand.length - 1) / 2;
-              const offset = i - mid;
-              return (
-                <div
-                  key={chit.id}
-                  className={`my-hand__card ${selected === chit.id ? "my-hand__card--selected" : ""}`}
-                  style={{
-                    transform: `translateX(${offset * 32}px) rotate(${offset * 7}deg)`,
-                    zIndex: i,
-                  }}
-                >
-                  <ChitCard
-                    chit={chit}
-                    unfold
-                    selected={selected === chit.id}
-                    onClick={myTurn ? () => setSelected(chit.id) : undefined}
-                    disabled={!myTurn}
-                  />
-                </div>
-              );
-            })}
+          <div className="my-hand__row">
+            {hand.map((chit) => (
+              <div
+                key={chit.id}
+                className={`my-hand__card ${selected === chit.id ? "my-hand__card--selected" : ""}`}
+              >
+                <ChitCard
+                  chit={chit}
+                  unfold
+                  selected={selected === chit.id}
+                  onClick={myTurn ? () => setSelected(chit.id) : undefined}
+                  disabled={!myTurn}
+                />
+              </div>
+            ))}
           </div>
         </div>
       }
