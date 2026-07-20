@@ -43,8 +43,10 @@ export interface PublicRummyRoom {
   lastCardEvent: RummyCardEvent | null;
 }
 
-export const RUMMY_MIN = 2;
-export const RUMMY_MAX = 4;
+import { RUMMY_MIN_PLAYERS, ROOM_MAX_PLAYERS } from "./limits";
+
+export const RUMMY_MIN = RUMMY_MIN_PLAYERS;
+export const RUMMY_MAX = ROOM_MAX_PLAYERS;
 
 export const SUIT_SYMBOL: Record<Suit, string> = {
   hearts: "♥",

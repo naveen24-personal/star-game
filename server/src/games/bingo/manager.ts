@@ -1,8 +1,8 @@
 import {
   BINGO_COLUMNS,
-  BINGO_MAX,
   BINGO_MIN,
   BingoCell,
+  ROOM_MAX_PLAYERS,
   normalizeNickname,
   nicknamesEqual,
 } from "@chit/shared";
@@ -120,7 +120,7 @@ export function joinRoom(
   const room = rooms.get(code.trim().toUpperCase());
   if (!room) return { ok: false, message: "Room not found." };
   if (room.phase !== "lobby") return { ok: false, message: "Game already started." };
-  if (connectedCount(room) >= BINGO_MAX) return { ok: false, message: "Room is full." };
+  if (connectedCount(room) >= ROOM_MAX_PLAYERS) return { ok: false, message: "Room is full." };
 
   const name = normalizeNickname(nickname);
   if (!name) return { ok: false, message: "Nickname is required." };
@@ -155,8 +155,8 @@ export function startGame(
   if (playerId !== room.hostId) return { ok: false, message: "Only host can start." };
   if (room.phase !== "lobby") return { ok: false, message: "Already started." };
   const n = connectedCount(room);
-  if (n < BINGO_MIN || n > BINGO_MAX) {
-    return { ok: false, message: `Need ${BINGO_MIN}–${BINGO_MAX} players.` };
+  if (n < BINGO_MIN || n > ROOM_MAX_PLAYERS) {
+    return { ok: false, message: `Need ${BINGO_MIN}–${ROOM_MAX_PLAYERS} players.` };
   }
 
   room.phase = "playing";
@@ -275,7 +275,7 @@ export function toPublicRoom(room: InternalBingoRoom, viewerId: string) {
     winnerId: room.winnerId,
     youPlayerId: viewerId,
     minPlayers: BINGO_MIN,
-    maxPlayers: BINGO_MAX,
+    maxPlayers: ROOM_MAX_PLAYERS,
   };
 }
 

@@ -1,9 +1,9 @@
 import {
   LADDERS,
   SNAKES,
-  SNAKES_MAX,
   SNAKES_MIN,
   SNAKES_WIN,
+  ROOM_MAX_PLAYERS,
   normalizeNickname,
   nicknamesEqual,
 } from "@chit/shared";
@@ -95,7 +95,7 @@ export function joinRoom(
   const room = rooms.get(code.trim().toUpperCase());
   if (!room) return { ok: false, message: "Room not found." };
   if (room.phase !== "lobby") return { ok: false, message: "Game already started." };
-  if (connectedPlayers(room).length >= SNAKES_MAX) return { ok: false, message: "Room is full." };
+  if (connectedPlayers(room).length >= ROOM_MAX_PLAYERS) return { ok: false, message: "Room is full." };
 
   const name = normalizeNickname(nickname);
   if (!name) return { ok: false, message: "Nickname is required." };
@@ -127,8 +127,8 @@ export function startGame(
   if (playerId !== room.hostId) return { ok: false, message: "Only host can start." };
   if (room.phase !== "lobby") return { ok: false, message: "Already started." };
   const active = connectedPlayers(room);
-  if (active.length < SNAKES_MIN || active.length > SNAKES_MAX) {
-    return { ok: false, message: `Need ${SNAKES_MIN}–${SNAKES_MAX} players.` };
+  if (active.length < SNAKES_MIN || active.length > ROOM_MAX_PLAYERS) {
+    return { ok: false, message: `Need ${SNAKES_MIN}–${ROOM_MAX_PLAYERS} players.` };
   }
 
   room.phase = "playing";
@@ -275,7 +275,7 @@ export function toPublicRoom(room: InternalSnakesRoom, viewerId: string) {
     winnerId: room.winnerId,
     youPlayerId: viewerId,
     minPlayers: SNAKES_MIN,
-    maxPlayers: SNAKES_MAX,
+    maxPlayers: ROOM_MAX_PLAYERS,
   };
 }
 

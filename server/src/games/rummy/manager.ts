@@ -1,8 +1,8 @@
 import {
   Card,
   RUMMY_HAND_SIZE,
-  RUMMY_MAX,
   RUMMY_MIN,
+  ROOM_MAX_PLAYERS,
   RummyCardEvent,
   Suit,
   isValidRummy4333,
@@ -45,7 +45,8 @@ function connectedPlayers(room: InternalRummyRoom): RummyPlayer[] {
 }
 
 function makeDeck(playerCount: number): Card[] {
-  const decks = playerCount >= 3 ? 2 : 1;
+  const cardsNeeded = playerCount * RUMMY_HAND_SIZE + 1;
+  const decks = Math.max(1, Math.ceil(cardsNeeded / 52));
   const out: Card[] = [];
   for (let d = 0; d < decks; d++) {
     for (const suit of SUITS) {
@@ -104,7 +105,7 @@ export function joinRoom(
   const room = rooms.get(code.trim().toUpperCase());
   if (!room) return { ok: false, message: "Room not found." };
   if (room.phase !== "lobby") return { ok: false, message: "Game already started." };
-  if (connectedPlayers(room).length >= RUMMY_MAX) return { ok: false, message: "Room is full." };
+  if (connectedPlayers(room).length >= ROOM_MAX_PLAYERS) return { ok: false, message: "Room is full." };
 
   const name = normalizeNickname(nickname);
   if (!name) return { ok: false, message: "Nickname is required." };
@@ -137,8 +138,8 @@ export function startGame(
   if (room.phase !== "lobby") return { ok: false, message: "Already started." };
   const active = connectedPlayers(room).sort((a, b) => a.seat - b.seat);
   const n = active.length;
-  if (n < RUMMY_MIN || n > RUMMY_MAX) {
-    return { ok: false, message: `Need ${RUMMY_MIN}–${RUMMY_MAX} players.` };
+  if (n < RUMMY_MIN || n > ROOM_MAX_PLAYERS) {
+    return { ok: false, message: `Need ${RUMMY_MIN}–${ROOM_MAX_PLAYERS} players.` };
   }
 
   const perHand = RUMMY_HAND_SIZE;
@@ -321,7 +322,7 @@ export function toPublicRoom(room: InternalRummyRoom, viewerId: string) {
     winnerId: room.winnerId,
     youPlayerId: viewerId,
     minPlayers: RUMMY_MIN,
-    maxPlayers: RUMMY_MAX,
+    maxPlayers: ROOM_MAX_PLAYERS,
     mustDiscard: !!viewer?.drewThisTurn,
     lastCardEvent: room.lastCardEvent ? { ...room.lastCardEvent } : null,
   };

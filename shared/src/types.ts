@@ -1,3 +1,5 @@
+import { CHIT_MIN_PLAYERS, ROOM_MAX_PLAYERS } from "./limits";
+
 export type RoomPhase =
   | "lobby"
   | "writing"
@@ -76,8 +78,8 @@ export interface RoomErrorPayload {
   message: string;
 }
 
-export const MIN_PLAYERS = 3;
-export const MAX_PLAYERS = 8;
+export const MIN_PLAYERS = CHIT_MIN_PLAYERS;
+export const MAX_PLAYERS = ROOM_MAX_PLAYERS;
 export const CHITS_PER_PLAYER = 4;
 
 /** Categories shown in the GIF picker (Tenor search queries). */

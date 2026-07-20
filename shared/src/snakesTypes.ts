@@ -33,8 +33,10 @@ export interface PublicSnakesRoom {
   maxPlayers: number;
 }
 
-export const SNAKES_MIN = 2;
-export const SNAKES_MAX = 8;
+import { SNAKES_MIN_PLAYERS, ROOM_MAX_PLAYERS } from "./limits";
+
+export const SNAKES_MIN = SNAKES_MIN_PLAYERS;
+export const SNAKES_MAX = ROOM_MAX_PLAYERS;
 export const SNAKES_WIN = 100;
 
 /** Classic board shortcuts */

@@ -1,6 +1,7 @@
 export * from "./types";
 export * from "./tollywoodGifs";
 export * from "./games";
+export * from "./limits";
 export * from "./bingoTypes";
 export * from "./rummyTypes";
 export * from "./rummyLogic";
