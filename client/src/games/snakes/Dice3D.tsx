@@ -1,5 +1,3 @@
-import { useEffect } from "react";
-
 const FACE_ROT: Record<number, string> = {
   1: "rotateX(0deg) rotateY(0deg)",
   2: "rotateX(0deg) rotateY(-90deg)",
@@ -9,40 +7,42 @@ const FACE_ROT: Record<number, string> = {
   6: "rotateX(0deg) rotateY(180deg)",
 };
 
-function Face({ n }: { n: number }) {
-  const dots: [number, number][] = {
-    1: [[50, 50]],
-    2: [
-      [30, 30],
-      [70, 70],
-    ],
-    3: [
-      [30, 30],
-      [50, 50],
-      [70, 70],
-    ],
-    4: [
-      [30, 30],
-      [70, 30],
-      [30, 70],
-      [70, 70],
-    ],
-    5: [
-      [30, 30],
-      [70, 30],
-      [50, 50],
-      [30, 70],
-      [70, 70],
-    ],
-    6: [
-      [30, 25],
-      [70, 25],
-      [30, 50],
-      [70, 50],
-      [30, 75],
-      [70, 75],
-    ],
-  }[n as 1 | 2 | 3 | 4 | 5 | 6];
+const FACE_DOTS: Record<1 | 2 | 3 | 4 | 5 | 6, [number, number][]> = {
+  1: [[50, 50]],
+  2: [
+    [30, 30],
+    [70, 70],
+  ],
+  3: [
+    [30, 30],
+    [50, 50],
+    [70, 70],
+  ],
+  4: [
+    [30, 30],
+    [70, 30],
+    [30, 70],
+    [70, 70],
+  ],
+  5: [
+    [30, 30],
+    [70, 30],
+    [50, 50],
+    [30, 70],
+    [70, 70],
+  ],
+  6: [
+    [30, 25],
+    [70, 25],
+    [30, 50],
+    [70, 50],
+    [30, 75],
+    [70, 75],
+  ],
+};
+
+function Face({ n }: { n: 1 | 2 | 3 | 4 | 5 | 6 }) {
+  const dots = FACE_DOTS[n];
 
   return (
     <div className={`dice3d__face dice3d__face--${n}`}>
