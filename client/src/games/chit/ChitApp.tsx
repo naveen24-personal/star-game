@@ -1,14 +1,14 @@
 import { useMemo } from "react";
-import type { GifPopItem } from "../components/GifPops";
+import type { GifPopItem } from "../../components/GifPops";
 import type { PublicRoom } from "@chit/shared";
-import { GifChat } from "../components/GifChat";
-import { GifPops } from "../components/GifPops";
-import { WaitingLobby } from "../pages/WaitingLobby";
-import { WriteChits } from "../pages/WriteChits";
-import { ThrowAndPick } from "../pages/ThrowAndPick";
-import { PassRound } from "../pages/PassRound";
-import { RevealWinner } from "../pages/RevealWinner";
-import { seatPositionMap } from "../seatLayout";
+import { GifChat } from "../../components/GifChat";
+import { GifPops } from "../../components/GifPops";
+import { WaitingLobby } from "../../pages/WaitingLobby";
+import { WriteChits } from "../../pages/WriteChits";
+import { ThrowAndPick } from "../../pages/ThrowAndPick";
+import { PassRound } from "../../pages/PassRound";
+import { RevealWinner } from "../../pages/RevealWinner";
+import { seatPositionMap } from "../../seatLayout";
 
 type Props = {
   room: PublicRoom;

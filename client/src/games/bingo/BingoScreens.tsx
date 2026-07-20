@@ -1,6 +1,6 @@
 import type { PublicBingoRoom } from "@chit/shared";
 import { BINGO_COLUMNS } from "@chit/shared";
-import { api } from "../socket";
+import { api } from "../../socket";
 
 type Props = { room: PublicBingoRoom };
 
