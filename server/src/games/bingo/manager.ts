@@ -6,7 +6,7 @@ import {
   normalizeNickname,
   nicknamesEqual,
 } from "@chit/shared";
-import { newId, setBinding, shuffle, uniqueRoomCode, getBinding } from "../platform/common";
+import { newId, setBinding, shuffle, uniqueRoomCode, getBinding } from "../../platform/common";
 
 export interface BingoPlayer {
   id: string;
