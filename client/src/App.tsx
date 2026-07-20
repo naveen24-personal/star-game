@@ -56,11 +56,13 @@ export default function App() {
   const tablePhase = room?.gameId === "chit" && (
     room.phase === "throwing" || room.phase === "picking" || room.phase === "passing"
   );
+  const snakesPlay = room?.gameId === "snakes" && room.phase === "playing";
+  const rummyPlay = room?.gameId === "rummy" && room.phase === "playing";
 
   return (
-    <div className={`app ${theme} ${tablePhase ? "app--table" : ""}`}>
+    <div className={`app ${theme} ${tablePhase ? "app--table" : ""} ${snakesPlay ? "app--snakes-play" : ""} ${rummyPlay ? "app--rummy-play" : ""}`}>
       <div className={`backdrop ${tablePhase ? "backdrop--table" : ""}`} aria-hidden />
-      <main className={`shell ${tablePhase ? "shell--table" : room?.gameId === "snakes" && room.phase === "playing" ? "shell--wide" : ""}`}>
+      <main className={`shell ${tablePhase ? "shell--table" : room?.gameId === "snakes" && room.phase === "playing" ? "shell--wide" : room?.gameId === "rummy" && room.phase === "playing" ? "shell--table" : ""}`}>
         {!room && !selectedGame && <GameHub onSelect={setSelectedGame} />}
         {!room && selectedGame && (
           <Lobby
@@ -99,7 +101,9 @@ export default function App() {
             {((room as PublicRummyRoom).phase === "playing" || (room as PublicRummyRoom).phase === "won") && (
               <RummyPlay room={room as PublicRummyRoom} />
             )}
-            <GifChat open={chatOpen} onToggle={() => setChatOpen((o) => !o)} />
+            {(room as PublicRummyRoom).phase !== "playing" && (
+              <GifChat open={chatOpen} onToggle={() => setChatOpen((o) => !o)} />
+            )}
           </>
         )}
 

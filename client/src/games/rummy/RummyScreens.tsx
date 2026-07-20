@@ -1,22 +1,10 @@
-import type { Card, PublicRummyRoom } from "@chit/shared";
-import { cardLabel, isRedSuit } from "@chit/shared";
+import type { PublicRummyRoom } from "@chit/shared";
+import { RUMMY_HAND_SIZE } from "@chit/shared";
 import { api } from "../../socket";
+import { RummyTable } from "./RummyTable";
+import { RummyHandBoard } from "./RummyHandBoard";
 
 type Props = { room: PublicRummyRoom };
-
-function PlayingCard({ card, onClick, selected }: { card: Card; onClick?: () => void; selected?: boolean }) {
-  const red = isRedSuit(card.suit);
-  return (
-    <button
-      type="button"
-      className={`rummy-card ${red ? "rummy-card--red" : "rummy-card--black"} ${selected ? "rummy-card--selected" : ""}`}
-      onClick={onClick}
-      disabled={!onClick}
-    >
-      {cardLabel(card)}
-    </button>
-  );
-}
 
 export function RummyWaiting({ room }: Props) {
   const connected = room.players.filter((p) => p.connected);
@@ -27,7 +15,8 @@ export function RummyWaiting({ room }: Props) {
       <p className="eyebrow">Room {room.code}</p>
       <h2 className="title">Royal Rummy</h2>
       <p className="lede">
-        Green felt table — draw, discard, declare when your hand is all sets or runs.
+        Round green table — 13 cards each, arrange as <strong>4 + 3 + 3 + 3</strong> sets or runs,
+        draw, discard, declare to win.
       </p>
       <ul className="player-list">
         {connected.map((p) => (
@@ -45,7 +34,7 @@ export function RummyWaiting({ room }: Props) {
           disabled={connected.length < room.minPlayers}
           onClick={() => api.start()}
         >
-          Deal cards
+          Deal {RUMMY_HAND_SIZE} cards
         </button>
       )}
     </section>
@@ -62,7 +51,7 @@ export function RummyPlay({ room }: Props) {
     return (
       <section className="panel rummy-panel rummy-win">
         <h2 className="title">Royal win!</h2>
-        <p className="lede">{winner?.nickname} declared a valid hand.</p>
+        <p className="lede">{winner?.nickname} declared a valid 4·3·3·3 hand.</p>
         {room.youPlayerId === room.hostId && (
           <button type="button" className="btn btn--primary" onClick={() => api.playAgain()}>
             New round
@@ -72,66 +61,53 @@ export function RummyPlay({ room }: Props) {
     );
   }
 
-  return (
-    <section className="panel rummy-panel rummy-play">
-      <div className="rummy-top">
-        <div>
-          <p className="eyebrow">Room {room.code}</p>
-          <h2 className="title">Royal Rummy</h2>
-        </div>
-        <p className="rummy-turn">
-          {isYourTurn ? "Your turn" : `${room.players.find((p) => p.id === room.currentTurnPlayerId)?.nickname ?? "…"}'s turn`}
-        </p>
-      </div>
+  const turnName = room.players.find((p) => p.id === room.currentTurnPlayerId)?.nickname ?? "…";
 
-      <div className="rummy-table">
-        <div className="rummy-pile">
-          <p className="subtitle">Deck</p>
-          <button
-            type="button"
-            className="rummy-deck"
-            disabled={!isYourTurn || room.mustDiscard}
-            onClick={() => api.rummyDrawDeck()}
-          >
-            <span>{room.deckCount}</span>
-          </button>
-        </div>
-        <div className="rummy-pile">
-          <p className="subtitle">Discard</p>
-          {room.discardTop ? (
-            <PlayingCard
-              card={room.discardTop}
-              onClick={isYourTurn && !room.mustDiscard ? () => api.rummyDrawDiscard() : undefined}
-            />
-          ) : (
-            <div className="rummy-empty">—</div>
+  return (
+    <RummyTable
+      room={room}
+      canDraw={isYourTurn && !room.mustDiscard}
+      onDrawDeck={() => api.rummyDrawDeck()}
+      onDrawDiscard={() => api.rummyDrawDiscard()}
+      banner={
+        <span className="rummy-banner__text">
+          {isYourTurn ? "Your turn — draw then discard" : `${turnName}'s turn`}
+        </span>
+      }
+      centerContent={
+        isYourTurn && !room.mustDiscard ? (
+          <div className="rummy-draw-actions">
+            <button type="button" className="btn btn--primary btn--sm" onClick={() => api.rummyDrawDeck()}>
+              Draw deck
+            </button>
+            <button
+              type="button"
+              className="btn btn--ghost btn--sm"
+              disabled={!room.discardTop}
+              onClick={() => api.rummyDrawDiscard()}
+            >
+              Take discard
+            </button>
+          </div>
+        ) : null
+      }
+      myHand={
+        <div className="rummy-me-panel">
+          <RummyHandBoard
+            hand={hand}
+            canDiscard={isYourTurn && room.mustDiscard}
+            onDiscard={(id) => api.rummyDiscard(id)}
+          />
+          {isYourTurn && room.mustDiscard && (
+            <div className="rummy-me-actions">
+              <button type="button" className="btn btn--accent" onClick={() => api.rummyDeclare()}>
+                Declare (4·3·3·3)
+              </button>
+              <p className="hint">Tap a card to discard to the pile — watch it fly!</p>
+            </div>
           )}
         </div>
-      </div>
-
-      <div className="rummy-hand">
-        <p className="subtitle">Your hand ({hand.length})</p>
-        <div className="rummy-hand__cards">
-          {hand.map((c) => (
-            <PlayingCard
-              key={c.id}
-              card={c}
-              onClick={
-                isYourTurn && room.mustDiscard ? () => api.rummyDiscard(c.id) : undefined
-              }
-            />
-          ))}
-        </div>
-      </div>
-
-      {isYourTurn && room.mustDiscard && (
-        <div className="actions">
-          <button type="button" className="btn btn--accent" onClick={() => api.rummyDeclare()}>
-            Declare win
-          </button>
-          <p className="hint">Tap a card to discard, or declare if all cards form sets/runs.</p>
-        </div>
-      )}
-    </section>
+      }
+    />
   );
 }

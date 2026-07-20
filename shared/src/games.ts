@@ -32,7 +32,7 @@ export const GAME_CATALOG: Record<GameId, GameInfo> = {
   rummy: {
     id: "rummy",
     name: "Royal Rummy",
-    tagline: "Draw, discard, declare — green felt and golden wins.",
+    tagline: "13 cards — arrange 4+3+3+3 on the green round table, draw, discard, declare.",
     emoji: "♠️",
     minPlayers: 2,
     maxPlayers: 4,

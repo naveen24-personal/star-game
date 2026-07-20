@@ -1,11 +1,21 @@
 import type { PublicPlayer, PublicRoom } from "@chit/shared";
 
-/** Seat "you" at the bottom; others clockwise for pass-right logic. */
-export function seatsForViewer(room: PublicRoom): PublicPlayer[] {
-  const sorted = [...room.players].sort((a, b) => a.seat - b.seat);
-  const myIdx = sorted.findIndex((p) => p.id === room.youPlayerId);
+export interface SeatLike {
+  id: string;
+  seat: number;
+}
+
+/** Seat "you" at the bottom; others clockwise. */
+export function seatsForGeneric<T extends SeatLike>(players: T[], youPlayerId: string): T[] {
+  const sorted = [...players].sort((a, b) => a.seat - b.seat);
+  const myIdx = sorted.findIndex((p) => p.id === youPlayerId);
   if (myIdx <= 0) return sorted;
   return [...sorted.slice(myIdx), ...sorted.slice(0, myIdx)];
+}
+
+/** Seat "you" at the bottom; others clockwise for pass-right logic. */
+export function seatsForViewer(room: PublicRoom): PublicPlayer[] {
+  return seatsForGeneric(room.players, room.youPlayerId);
 }
 
 export function opponentsForViewer(room: PublicRoom): PublicPlayer[] {

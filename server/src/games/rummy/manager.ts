@@ -1,8 +1,11 @@
 import {
   Card,
+  RUMMY_HAND_SIZE,
   RUMMY_MAX,
   RUMMY_MIN,
+  RummyCardEvent,
   Suit,
+  isValidRummy4333,
   normalizeNickname,
   nicknamesEqual,
 } from "@chit/shared";
@@ -27,6 +30,7 @@ export interface InternalRummyRoom {
   discard: Card[];
   currentTurnPlayerId: string | null;
   winnerId: string | null;
+  lastCardEvent: RummyCardEvent | null;
 }
 
 const rooms = new Map<string, InternalRummyRoom>();
@@ -40,55 +44,21 @@ function connectedPlayers(room: InternalRummyRoom): RummyPlayer[] {
   return room.players.filter((p) => p.connected);
 }
 
-function makeDeck(): Card[] {
-  const deck: Card[] = [];
-  for (const suit of SUITS) {
-    for (let rank = 1; rank <= 13; rank++) {
-      deck.push({ id: newId(), suit, rank });
-    }
-  }
-  return shuffle(deck);
-}
-
-export function isValidDeclare(cards: Card[]): boolean {
-  if (cards.length === 0) return true;
-
-  function partition(remaining: Card[]): boolean {
-    if (remaining.length === 0) return true;
-    const sorted = [...remaining].sort((a, b) => a.rank - b.rank || a.suit.localeCompare(b.suit));
-
-    const rank = sorted[0].rank;
-    const sameRank = sorted.filter((c) => c.rank === rank);
-    if (sameRank.length >= 3) {
-      for (let take = 3; take <= sameRank.length; take++) {
-        const ids = new Set(sameRank.slice(0, take).map((c) => c.id));
-        const rest = sorted.filter((c) => !ids.has(c.id));
-        if (partition(rest)) return true;
+function makeDeck(playerCount: number): Card[] {
+  const decks = playerCount >= 3 ? 2 : 1;
+  const out: Card[] = [];
+  for (let d = 0; d < decks; d++) {
+    for (const suit of SUITS) {
+      for (let rank = 1; rank <= 13; rank++) {
+        out.push({ id: newId(), suit, rank });
       }
     }
-
-    const suit = sorted[0].suit;
-    const startRank = sorted[0].rank;
-    const run: Card[] = [sorted[0]];
-    let expect = startRank + 1;
-    while (true) {
-      const next = sorted.find(
-        (c) => c.suit === suit && c.rank === expect && !run.some((r) => r.id === c.id)
-      );
-      if (!next) break;
-      run.push(next);
-      expect++;
-    }
-    if (run.length >= 3) {
-      const ids = new Set(run.map((c) => c.id));
-      const rest = sorted.filter((c) => !ids.has(c.id));
-      if (partition(rest)) return true;
-    }
-
-    return false;
   }
+  return shuffle(out);
+}
 
-  return partition(cards);
+function cardEvent(card: Card, playerId: string, kind: RummyCardEvent["kind"]): RummyCardEvent {
+  return { kind, playerId, cardId: card.id, suit: card.suit, rank: card.rank };
 }
 
 export function createRoom(
@@ -119,6 +89,7 @@ export function createRoom(
     discard: [],
     currentTurnPlayerId: null,
     winnerId: null,
+    lastCardEvent: null,
   };
   rooms.set(code, room);
   setBinding(socketId, { roomCode: code, playerId, gameId: "rummy" });
@@ -170,9 +141,10 @@ export function startGame(
     return { ok: false, message: `Need ${RUMMY_MIN}–${RUMMY_MAX} players.` };
   }
 
-  const perHand = n === 2 ? 10 : 7;
-  room.deck = makeDeck();
+  const perHand = RUMMY_HAND_SIZE;
+  room.deck = makeDeck(n);
   room.discard = [];
+  room.lastCardEvent = null;
   for (const p of active) {
     p.hand = room.deck.splice(0, perHand);
     p.drewThisTurn = false;
@@ -201,8 +173,10 @@ export function drawDeck(
     room.deck = shuffle(room.discard);
     room.discard = [top];
   }
-  player.hand.push(room.deck.pop()!);
+  const drawn = room.deck.pop()!;
+  player.hand.push(drawn);
   player.drewThisTurn = true;
+  room.lastCardEvent = cardEvent(drawn, playerId, "draw-deck");
   return { ok: true, room };
 }
 
@@ -217,8 +191,10 @@ export function drawDiscard(
   const player = room.players.find((p) => p.id === playerId)!;
   if (player.drewThisTurn) return { ok: false, message: "Already drew this turn." };
   if (room.discard.length === 0) return { ok: false, message: "Discard pile empty." };
-  player.hand.push(room.discard.pop()!);
+  const drawn = room.discard.pop()!;
+  player.hand.push(drawn);
   player.drewThisTurn = true;
+  room.lastCardEvent = cardEvent(drawn, playerId, "draw-discard");
   return { ok: true, room };
 }
 
@@ -239,6 +215,7 @@ export function discardCard(
   const [card] = player.hand.splice(idx, 1);
   room.discard.push(card);
   player.drewThisTurn = false;
+  room.lastCardEvent = cardEvent(card, playerId, "discard");
 
   const order = connectedPlayers(room).sort((a, b) => a.seat - b.seat);
   const curIdx = order.findIndex((p) => p.id === playerId);
@@ -256,8 +233,11 @@ export function declareWin(
   if (room.currentTurnPlayerId !== playerId) return { ok: false, message: "Not your turn." };
   const player = room.players.find((p) => p.id === playerId)!;
   if (!player.drewThisTurn) return { ok: false, message: "Draw and group your hand first." };
-  if (!isValidDeclare(player.hand)) {
-    return { ok: false, message: "Invalid hand — need sets (3+ same rank) or runs (3+ in suit)." };
+  if (!isValidRummy4333(player.hand)) {
+    return {
+      ok: false,
+      message: "Invalid hand — arrange as one set/run of 4 and three sets/runs of 3.",
+    };
   }
   room.phase = "won";
   room.winnerId = playerId;
@@ -277,6 +257,7 @@ export function playAgain(
   ctx.room.discard = [];
   ctx.room.currentTurnPlayerId = null;
   ctx.room.winnerId = null;
+  ctx.room.lastCardEvent = null;
   for (const p of ctx.room.players) {
     p.hand = [];
     p.drewThisTurn = false;
@@ -342,6 +323,7 @@ export function toPublicRoom(room: InternalRummyRoom, viewerId: string) {
     minPlayers: RUMMY_MIN,
     maxPlayers: RUMMY_MAX,
     mustDiscard: !!viewer?.drewThisTurn,
+    lastCardEvent: room.lastCardEvent ? { ...room.lastCardEvent } : null,
   };
 }
 
