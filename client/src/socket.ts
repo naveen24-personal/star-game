@@ -1,5 +1,5 @@
 import { io, Socket } from "socket.io-client";
-import type { ChatMessage, PublicRoom, RoomErrorPayload } from "@chit/shared";
+import type { ChatMessage, GameId, RoomErrorPayload, RoomUpdate } from "@chit/shared";
 
 export const apiBase = import.meta.env.PROD ? "" : "";
 const URL = import.meta.env.PROD ? undefined : "http://localhost:3001";
@@ -14,7 +14,7 @@ export function getSocket(): Socket {
 }
 
 export type RoomHandlers = {
-  onRoom: (room: PublicRoom) => void;
+  onRoom: (room: RoomUpdate) => void;
   onError: (err: RoomErrorPayload) => void;
   onChat: (msg: ChatMessage) => void;
 };
@@ -32,8 +32,10 @@ export function bindRoomHandlers(handlers: RoomHandlers) {
 }
 
 export const api = {
-  create: (nickname: string) => getSocket().emit("room:create", { nickname }),
-  join: (code: string, nickname: string) => getSocket().emit("room:join", { code, nickname }),
+  create: (nickname: string, gameId: GameId) =>
+    getSocket().emit("room:create", { nickname, gameId }),
+  join: (code: string, nickname: string, gameId: GameId) =>
+    getSocket().emit("room:join", { code, nickname, gameId }),
   start: () => getSocket().emit("room:start"),
   submitChitText: (text: string) => getSocket().emit("chits:submit", { text }),
   throwChits: () => getSocket().emit("chits:throw"),
@@ -41,6 +43,13 @@ export const api = {
   release: (chitId: string) => getSocket().emit("chits:release", { chitId }),
   pass: (chitId: string) => getSocket().emit("chits:pass", { chitId }),
   playAgain: () => getSocket().emit("room:playAgain"),
+  bingoCall: () => getSocket().emit("bingo:call"),
+  bingoClaim: () => getSocket().emit("bingo:claim"),
+  rummyDrawDeck: () => getSocket().emit("rummy:drawDeck"),
+  rummyDrawDiscard: () => getSocket().emit("rummy:drawDiscard"),
+  rummyDiscard: (cardId: string) => getSocket().emit("rummy:discard", { cardId }),
+  rummyDeclare: () => getSocket().emit("rummy:declare"),
+  snakesRoll: () => getSocket().emit("snakes:roll"),
   sendGif: (payload: { gifId: string; gifUrl: string; label: string }) =>
     getSocket().emit("chat:gif", payload),
 };

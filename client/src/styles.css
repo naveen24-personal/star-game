@@ -1002,3 +1002,520 @@ body {
     height: 60px;
   }
 }
+
+/* —— Game hub —— */
+.theme-hub {
+  --bg0: #0c0e14;
+  --bg1: #1a1f35;
+  --accent: #7dd3fc;
+  --accent2: #a78bfa;
+  --ink: #f0f4ff;
+  --muted: #94a3b8;
+}
+
+.hub-brand {
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.game-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.game-card {
+  text-align: left;
+  border: 1px solid var(--stroke);
+  border-radius: 16px;
+  padding: 1.25rem;
+  background: var(--card);
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  color: inherit;
+  font: inherit;
+}
+
+.game-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+}
+
+.game-card__emoji {
+  font-size: 2.2rem;
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.game-card__name {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 1.8rem;
+  letter-spacing: 0.03em;
+  margin-bottom: 0.35rem;
+}
+
+.game-card__tagline {
+  display: block;
+  font-size: 0.9rem;
+  color: var(--muted);
+  line-height: 1.45;
+  margin-bottom: 0.75rem;
+}
+
+.game-card__players {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--accent);
+}
+
+.btn--back {
+  margin-bottom: 1rem;
+  padding-left: 0;
+}
+
+.player-list {
+  list-style: none;
+  padding: 0;
+  margin: 1rem 0 1.5rem;
+}
+
+.player-list li {
+  padding: 0.45rem 0;
+  border-bottom: 1px solid var(--stroke);
+}
+
+.hint {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.btn--accent {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: #0a0a0a;
+  font-weight: 700;
+  border: none;
+}
+
+/* —— Theme: Chit (default :root) —— */
+.theme-chit .backdrop:not(.backdrop--table) {
+  background:
+    radial-gradient(ellipse 80% 60% at 20% 10%, rgba(240, 162, 2, 0.28), transparent 55%),
+    radial-gradient(ellipse 70% 50% at 90% 80%, rgba(232, 93, 4, 0.22), transparent 50%),
+    linear-gradient(165deg, var(--bg1), var(--bg0) 55%, #0d0806);
+}
+
+.game-card.theme-chit {
+  background: linear-gradient(145deg, rgba(232, 93, 4, 0.15), rgba(61, 31, 18, 0.6));
+}
+
+/* —— Theme: Bingo —— */
+.theme-bingo {
+  --bg0: #0a0618;
+  --bg1: #1a0f3d;
+  --accent: #22d3ee;
+  --accent2: #e879f9;
+  --ink: #f5f0ff;
+  --muted: #c4b5fd;
+  --card: rgba(139, 92, 246, 0.12);
+  --stroke: rgba(167, 139, 250, 0.25);
+}
+
+.theme-bingo .backdrop {
+  background:
+    radial-gradient(ellipse 70% 50% at 50% 0%, rgba(232, 121, 249, 0.35), transparent 55%),
+    radial-gradient(ellipse 60% 40% at 80% 90%, rgba(34, 211, 238, 0.2), transparent 50%),
+    linear-gradient(180deg, #1a0f3d, #0a0618);
+}
+
+.game-card.theme-bingo {
+  background: linear-gradient(145deg, rgba(232, 121, 249, 0.18), rgba(26, 15, 61, 0.8));
+  box-shadow: 0 0 24px rgba(232, 121, 249, 0.12);
+}
+
+.bingo-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.bingo-call {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.75rem 1.25rem;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--accent2), var(--accent));
+  color: #0a0618;
+  animation: pulse-call 0.6s ease;
+}
+
+@keyframes pulse-call {
+  0% {
+    transform: scale(0.85);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.bingo-call__letter {
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+}
+
+.bingo-call__num {
+  font-family: var(--font-display);
+  font-size: 2.8rem;
+  line-height: 1;
+}
+
+.bingo-board-wrap {
+  margin: 1.5rem auto;
+  max-width: 420px;
+}
+
+.bingo-letters {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+  margin-bottom: 4px;
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  color: var(--accent2);
+}
+
+.bingo-board {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+}
+
+.bingo-cell {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--stroke);
+  font-weight: 600;
+  font-size: clamp(0.65rem, 3vw, 0.95rem);
+  transition: background 0.2s, transform 0.2s;
+}
+
+.bingo-cell--marked {
+  background: linear-gradient(135deg, var(--accent2), var(--accent));
+  color: #0a0618;
+  transform: scale(0.95);
+}
+
+.bingo-cell--free {
+  font-size: 0.6rem;
+  color: var(--accent);
+}
+
+.bingo-called__nums {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.bingo-chip {
+  padding: 0.25rem 0.5rem;
+  border-radius: 999px;
+  background: var(--card);
+  border: 1px solid var(--stroke);
+  font-size: 0.8rem;
+}
+
+.bingo-actions {
+  margin-top: 1.25rem;
+}
+
+.bingo-win .title {
+  font-size: 4rem;
+  color: var(--accent2);
+  text-shadow: 0 0 30px rgba(232, 121, 249, 0.6);
+}
+
+/* —— Theme: Rummy —— */
+.theme-rummy {
+  --bg0: #061208;
+  --bg1: #0f2918;
+  --accent: #d4af37;
+  --accent2: #34d399;
+  --ink: #ecfdf5;
+  --muted: #86efac;
+  --card: rgba(52, 211, 153, 0.1);
+  --stroke: rgba(212, 175, 55, 0.25);
+}
+
+.theme-rummy .backdrop {
+  background:
+    radial-gradient(ellipse 80% 50% at 50% 20%, rgba(52, 211, 153, 0.15), transparent 55%),
+    radial-gradient(ellipse 60% 40% at 20% 80%, rgba(212, 175, 55, 0.12), transparent 50%),
+    linear-gradient(165deg, #0f2918, #061208);
+}
+
+.game-card.theme-rummy {
+  background: linear-gradient(145deg, rgba(52, 211, 153, 0.12), rgba(15, 41, 24, 0.85));
+  border-color: rgba(212, 175, 55, 0.3);
+}
+
+.rummy-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.rummy-turn {
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  background: var(--card);
+  border: 1px solid var(--stroke);
+  font-weight: 600;
+}
+
+.rummy-table {
+  display: flex;
+  gap: 2rem;
+  justify-content: center;
+  margin: 2rem 0;
+  padding: 1.5rem;
+  border-radius: 20px;
+  background: radial-gradient(ellipse at center, #1a5c32, #0d3d22);
+  border: 3px solid rgba(212, 175, 55, 0.35);
+  box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.4);
+}
+
+.rummy-pile {
+  text-align: center;
+}
+
+.rummy-deck {
+  width: 64px;
+  height: 88px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #1e3a5f, #0f172a);
+  border: 2px solid var(--accent);
+  color: var(--accent);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.rummy-deck:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.rummy-card {
+  width: 64px;
+  height: 88px;
+  border-radius: 8px;
+  background: #fffef8;
+  border: 1px solid #ccc;
+  font-weight: 700;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+
+.rummy-card--red {
+  color: #dc2626;
+}
+
+.rummy-card--black {
+  color: #1e293b;
+}
+
+.rummy-card:hover:not(:disabled) {
+  transform: translateY(-6px);
+}
+
+.rummy-hand__cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.rummy-empty {
+  width: 64px;
+  height: 88px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.4;
+}
+
+/* —— Theme: Snakes —— */
+.theme-snakes {
+  --bg0: #1a1208;
+  --bg1: #2d5016;
+  --accent: #fbbf24;
+  --accent2: #84cc16;
+  --ink: #fefce8;
+  --muted: #d9f99d;
+  --card: rgba(251, 191, 36, 0.12);
+  --stroke: rgba(132, 204, 22, 0.3);
+}
+
+.theme-snakes .backdrop {
+  background:
+    radial-gradient(ellipse 70% 50% at 30% 10%, rgba(251, 191, 36, 0.25), transparent 55%),
+    radial-gradient(ellipse 60% 40% at 90% 70%, rgba(132, 204, 22, 0.2), transparent 50%),
+    linear-gradient(165deg, #2d5016, #1a1208);
+}
+
+.game-card.theme-snakes {
+  background: linear-gradient(145deg, rgba(132, 204, 22, 0.15), rgba(45, 80, 22, 0.7));
+}
+
+.snakes-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.snakes-roll {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 1rem;
+  border-radius: 12px;
+  background: var(--card);
+  border: 1px solid var(--stroke);
+}
+
+.snakes-roll--snake {
+  border-color: #ef4444;
+  background: rgba(239, 68, 68, 0.15);
+}
+
+.snakes-roll--ladder {
+  border-color: #22c55e;
+  background: rgba(34, 197, 94, 0.15);
+}
+
+.snakes-roll__dice {
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.snakes-board-wrap {
+  overflow-x: auto;
+  margin: 0 auto 1rem;
+}
+
+.snakes-board {
+  display: grid;
+  grid-template-columns: repeat(10, minmax(28px, 1fr));
+  gap: 2px;
+  min-width: 320px;
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 4px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.snakes-cell {
+  aspect-ratio: 1;
+  position: relative;
+  border-radius: 4px;
+  background: #fef3c7;
+  color: #422006;
+  font-size: 0.55rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+}
+
+.snakes-cell:nth-child(odd) {
+  background: #fde68a;
+}
+
+.snakes-cell--ladder {
+  background: #bbf7d0 !important;
+}
+
+.snakes-cell--snake {
+  background: #fecaca !important;
+}
+
+.snakes-cell--goal {
+  background: linear-gradient(135deg, #fbbf24, #f59e0b) !important;
+  font-weight: 700;
+}
+
+.snakes-cell__num {
+  font-weight: 600;
+}
+
+.snakes-cell__tokens {
+  display: flex;
+  gap: 1px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.snakes-token {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #6366f1;
+  color: white;
+  font-size: 0.45rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+}
+
+.snakes-token--you {
+  background: #dc2626;
+  box-shadow: 0 0 0 2px #fefce8;
+}
+
+.snakes-scores {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin: 1rem 0;
+}
+
+.snakes-scores--active {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.btn--dice {
+  font-size: 1.1rem;
+  padding: 0.85rem 2rem;
+}
+
+@media (max-width: 700px) {
+  .game-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .snakes-board {
+    min-width: 280px;
+  }
+}

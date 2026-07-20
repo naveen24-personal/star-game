@@ -55,6 +55,7 @@ export interface PassEvent {
 }
 
 export interface PublicRoom {
+  gameId: "chit";
   code: string;
   phase: RoomPhase;
   hostId: string;

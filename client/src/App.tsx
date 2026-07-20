@@ -1,20 +1,28 @@
-import { useEffect, useMemo, useState } from "react";
-import type { ChatMessage, PublicRoom } from "@chit/shared";
+import { useEffect, useState } from "react";
+import type {
+  ChatMessage,
+  GameId,
+  PublicBingoRoom,
+  PublicRummyRoom,
+  PublicRoom,
+  PublicSnakesRoom,
+  RoomUpdate,
+} from "@chit/shared";
 import { bindRoomHandlers, getSocket } from "./socket";
 import { GifChat } from "./components/GifChat";
-import { GifPops, type GifPopItem } from "./components/GifPops";
+import type { GifPopItem } from "./components/GifPops";
+import { GameHub, themeForGame } from "./pages/GameHub";
 import { Lobby } from "./pages/Lobby";
-import { WaitingLobby } from "./pages/WaitingLobby";
-import { WriteChits } from "./pages/WriteChits";
-import { ThrowAndPick } from "./pages/ThrowAndPick";
-import { PassRound } from "./pages/PassRound";
-import { RevealWinner } from "./pages/RevealWinner";
-import { seatPositionMap } from "./seatLayout";
+import { ChitApp } from "./games/chit/ChitApp";
+import { BingoPlay, BingoWaiting } from "./games/bingo/BingoScreens";
+import { RummyPlay, RummyWaiting } from "./games/rummy/RummyScreens";
+import { SnakesPlay, SnakesWaiting } from "./games/snakes/SnakesScreens";
 
 const POP_MS = 2800;
 
 export default function App() {
-  const [room, setRoom] = useState<PublicRoom | null>(null);
+  const [selectedGame, setSelectedGame] = useState<GameId | null>(null);
+  const [room, setRoom] = useState<RoomUpdate | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pops, setPops] = useState<GifPopItem[]>([]);
   const [chatOpen, setChatOpen] = useState(false);
@@ -26,6 +34,7 @@ export default function App() {
       onRoom: (r) => {
         setRoom(r);
         setRoomCode(r.code);
+        setSelectedGame(r.gameId);
         setError(null);
       },
       onError: (e) => setError(e.message),
@@ -43,36 +52,68 @@ export default function App() {
     setChatOpen(false);
   }, [roomCode]);
 
-  const tablePhase =
-    room?.phase === "throwing" ||
-    room?.phase === "picking" ||
-    room?.phase === "passing";
-
-  const fallbackPositions = useMemo(() => {
-    if (!room || tablePhase) return undefined;
-    const map = seatPositionMap(room);
-    const obj: Record<string, { left: number; top: number }> = {};
-    map.forEach((v, k) => {
-      // Map arena % into a softer overlay area for non-table screens
-      obj[k] = { left: 18 + (v.left / 100) * 64, top: 22 + (v.top / 100) * 50 };
-    });
-    return obj;
-  }, [room, tablePhase]);
+  const theme = room ? themeForGame(room.gameId) : selectedGame ? themeForGame(selectedGame) : "theme-hub";
+  const tablePhase = room?.gameId === "chit" && (
+    room.phase === "throwing" || room.phase === "picking" || room.phase === "passing"
+  );
 
   return (
-    <div className={`app ${tablePhase ? "app--table" : ""}`}>
+    <div className={`app ${theme} ${tablePhase ? "app--table" : ""}`}>
       <div className={`backdrop ${tablePhase ? "backdrop--table" : ""}`} aria-hidden />
-      <main className={`shell ${tablePhase ? "shell--table" : ""}`}>
-        {!room && <Lobby />}
-        {room?.phase === "lobby" && <WaitingLobby room={room} />}
-        {room?.phase === "writing" && <WriteChits room={room} />}
-        {(room?.phase === "throwing" || room?.phase === "picking") && (
-          <ThrowAndPick room={room} pops={pops} />
+      <main className={`shell ${tablePhase ? "shell--table" : room?.gameId === "snakes" && room.phase === "playing" ? "shell--wide" : ""}`}>
+        {!room && !selectedGame && <GameHub onSelect={setSelectedGame} />}
+        {!room && selectedGame && (
+          <Lobby
+            gameId={selectedGame}
+            onBack={() => {
+              setSelectedGame(null);
+              setError(null);
+            }}
+          />
         )}
-        {room?.phase === "passing" && <PassRound room={room} pops={pops} />}
-        {room?.phase === "revealed" && <RevealWinner room={room} />}
 
-        {error && (
+        {room?.gameId === "chit" && (
+          <ChitApp
+            room={room as PublicRoom}
+            error={error}
+            onDismissError={() => setError(null)}
+            pops={pops}
+            chatOpen={chatOpen}
+            onToggleChat={() => setChatOpen((o) => !o)}
+          />
+        )}
+
+        {room?.gameId === "bingo" && (
+          <>
+            {(room as PublicBingoRoom).phase === "lobby" && <BingoWaiting room={room as PublicBingoRoom} />}
+            {((room as PublicBingoRoom).phase === "playing" || (room as PublicBingoRoom).phase === "won") && (
+              <BingoPlay room={room as PublicBingoRoom} />
+            )}
+            <GifChat open={chatOpen} onToggle={() => setChatOpen((o) => !o)} />
+          </>
+        )}
+
+        {room?.gameId === "rummy" && (
+          <>
+            {(room as PublicRummyRoom).phase === "lobby" && <RummyWaiting room={room as PublicRummyRoom} />}
+            {((room as PublicRummyRoom).phase === "playing" || (room as PublicRummyRoom).phase === "won") && (
+              <RummyPlay room={room as PublicRummyRoom} />
+            )}
+            <GifChat open={chatOpen} onToggle={() => setChatOpen((o) => !o)} />
+          </>
+        )}
+
+        {room?.gameId === "snakes" && (
+          <>
+            {(room as PublicSnakesRoom).phase === "lobby" && <SnakesWaiting room={room as PublicSnakesRoom} />}
+            {((room as PublicSnakesRoom).phase === "playing" || (room as PublicSnakesRoom).phase === "won") && (
+              <SnakesPlay room={room as PublicSnakesRoom} />
+            )}
+            <GifChat open={chatOpen} onToggle={() => setChatOpen((o) => !o)} />
+          </>
+        )}
+
+        {room && room.gameId !== "chit" && error && (
           <div className="toast" role="alert">
             {error}
             <button type="button" onClick={() => setError(null)}>
@@ -81,14 +122,6 @@ export default function App() {
           </div>
         )}
       </main>
-
-      {!tablePhase && room && (
-        <GifPops pops={pops} positions={fallbackPositions} />
-      )}
-
-      {room && (
-        <GifChat open={chatOpen} onToggle={() => setChatOpen((o) => !o)} />
-      )}
     </div>
   );
 }

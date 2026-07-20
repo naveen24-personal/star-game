@@ -1,19 +1,27 @@
 import { useState } from "react";
+import type { GameId } from "@chit/shared";
+import { GAME_CATALOG } from "@chit/shared";
 import { api } from "../socket";
 
-export function Lobby() {
+type Props = {
+  gameId: GameId;
+  onBack: () => void;
+};
+
+export function Lobby({ gameId, onBack }: Props) {
+  const game = GAME_CATALOG[gameId];
   const [nickname, setNickname] = useState("");
   const [code, setCode] = useState("");
   const [mode, setMode] = useState<"home" | "join">("home");
 
   return (
     <section className="panel lobby">
-      <p className="eyebrow">Online party</p>
-      <h1 className="brand">Chit Party</h1>
-      <p className="lede">
-        Write one chit word (applied to all four), throw the pile, pick four, pass right — first with
-        four matching wins. Nicknames must be unique.
-      </p>
+      <button type="button" className="btn btn--ghost btn--back" onClick={onBack}>
+        ← All games
+      </button>
+      <p className="eyebrow">{game.emoji} Online multiplayer</p>
+      <h1 className="brand">{game.name}</h1>
+      <p className="lede">{game.tagline}</p>
 
       <label className="field">
         <span>Nickname</span>
@@ -31,7 +39,7 @@ export function Lobby() {
             type="button"
             className="btn btn--primary"
             disabled={!nickname.trim()}
-            onClick={() => api.create(nickname.trim())}
+            onClick={() => api.create(nickname.trim(), gameId)}
           >
             Create room
           </button>
@@ -55,7 +63,7 @@ export function Lobby() {
               type="button"
               className="btn btn--primary"
               disabled={!nickname.trim() || code.trim().length < 4}
-              onClick={() => api.join(code.trim(), nickname.trim())}
+              onClick={() => api.join(code.trim(), nickname.trim(), gameId)}
             >
               Join room
             </button>

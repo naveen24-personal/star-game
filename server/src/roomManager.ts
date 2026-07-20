@@ -14,7 +14,6 @@ import { randomUUID } from "crypto";
 import {
   canStart,
   claimChit,
-  createRoomCode,
   handleDisconnectLogic,
   InternalPlayer,
   InternalRoom,
@@ -25,17 +24,10 @@ import {
   submitChits,
   throwChits,
 } from "./gameLogic";
+import { uniqueRoomCode } from "./platform/common";
 
 const rooms = new Map<string, InternalRoom>();
 const socketToRoom = new Map<string, { roomCode: string; playerId: string }>();
-
-function uniqueCode(): string {
-  for (let i = 0; i < 20; i++) {
-    const code = createRoomCode();
-    if (!rooms.has(code)) return code;
-  }
-  return createRoomCode() + createRoomCode().slice(0, 2);
-}
 
 function isNicknameTaken(room: InternalRoom, nickname: string): boolean {
   return room.players.some(
@@ -50,7 +42,7 @@ export function createRoom(
   const name = normalizeNickname(nickname);
   if (!name) return { ok: false, message: "Nickname is required." };
 
-  const code = uniqueCode();
+  const code = uniqueRoomCode();
   const playerId = randomUUID();
   const player: InternalPlayer = {
     id: playerId,
@@ -116,7 +108,27 @@ export function joinRoom(
 }
 
 export function getBinding(socketId: string) {
-  return socketToRoom.get(socketId);
+  const b = socketToRoom.get(socketId);
+  if (!b) return undefined;
+  return { roomCode: b.roomCode, playerId: b.playerId, gameId: "chit" as const };
+}
+
+export function clearBinding(socketId: string) {
+  const b = socketToRoom.get(socketId);
+  socketToRoom.delete(socketId);
+  if (!b) return undefined;
+  return { roomCode: b.roomCode, playerId: b.playerId, gameId: "chit" as const };
+}
+
+export function disconnectByBinding(roomCode: string, playerId: string): InternalRoom | null {
+  const room = rooms.get(roomCode);
+  if (!room) return null;
+  handleDisconnectLogic(room, playerId);
+  if (room.players.filter((p) => p.connected).length === 0) {
+    rooms.delete(roomCode);
+    return null;
+  }
+  return room;
 }
 
 export function getRoom(code: string): InternalRoom | undefined {
@@ -280,6 +292,7 @@ export function toPublicRoom(room: InternalRoom, viewerId: string): PublicRoom {
     }));
 
   return {
+    gameId: "chit" as const,
     code: room.code,
     phase: room.phase,
     hostId: room.hostId,
