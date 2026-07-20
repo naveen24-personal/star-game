@@ -62,7 +62,7 @@ export default function App() {
   return (
     <div className={`app ${theme} ${tablePhase ? "app--table" : ""} ${snakesPlay ? "app--snakes-play" : ""} ${rummyPlay ? "app--rummy-play" : ""}`}>
       <div className={`backdrop ${tablePhase ? "backdrop--table" : ""}`} aria-hidden />
-      <main className={`shell ${tablePhase ? "shell--table" : room?.gameId === "snakes" && room.phase === "playing" ? "shell--wide" : room?.gameId === "rummy" && room.phase === "playing" ? "shell--table" : ""}`}>
+      <main className={`shell ${tablePhase ? "shell--table" : room?.gameId === "snakes" && room.phase === "playing" ? "shell--table" : room?.gameId === "rummy" && room.phase === "playing" ? "shell--table" : ""}`}>
         {!room && !selectedGame && <GameHub onSelect={setSelectedGame} />}
         {!room && selectedGame && (
           <Lobby
